@@ -1,0 +1,112 @@
+import { createClient } from "@/lib/supabase/server";
+import type { DashboardKpis } from "@/lib/types";
+
+export interface DashboardFilters {
+  project?: string;
+  sector?: string;
+  donor?: string;
+  year?: string;
+  zone?: string;
+}
+
+export async function getDashboardKpis(f: DashboardFilters): Promise<DashboardKpis | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("dashboard_kpis", {
+    p_project_id: f.project || null,
+    p_sector_id: f.sector || null,
+    p_donor_id: f.donor || null,
+    p_year: f.year ? Number(f.year) : null,
+    p_admin_zone_id: f.zone || null,
+  });
+  if (error || !data || data.length === 0) return null;
+  return data[0] as DashboardKpis;
+}
+
+export async function getFilterOptions() {
+  const supabase = await createClient();
+  const [{ data: projects }, { data: sectors }, { data: donors }, { data: zones }] = await Promise.all([
+    supabase.from("projects").select("id, code, name").order("name"),
+    supabase.from("sectors").select("id, name").eq("active", true).order("name"),
+    supabase.from("donors").select("id, name").eq("active", true).order("name"),
+    supabase.from("admin_zones").select("id, name, level").in("level", ["region", "province", "commune"]).order("name"),
+  ]);
+  return {
+    projects: projects ?? [],
+    sectors: sectors ?? [],
+    donors: donors ?? [],
+    zones: zones ?? [],
+  };
+}
+
+export async function getInterventionsBySector(f: DashboardFilters) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("interventions")
+    .select("sector_id, sectors(name, color)")
+    .in("validation_status", ["validated", "published"]);
+  if (f.project) query = query.eq("project_id", f.project);
+  if (f.sector) query = query.eq("sector_id", f.sector);
+  if (f.zone) query = query.eq("admin_zone_id", f.zone);
+  const { data } = await query;
+  const counts = new Map<string, { name: string; color: string; count: number }>();
+  for (const row of (data as unknown as { sector_id: string | null; sectors: { name: string; color: string } | null }[]) ?? []) {
+    if (!row.sector_id || !row.sectors) continue;
+    const key = row.sector_id;
+    const existing = counts.get(key);
+    if (existing) existing.count += 1;
+    else counts.set(key, { name: row.sectors.name, color: row.sectors.color, count: 1 });
+  }
+  return Array.from(counts.values());
+}
+
+export async function getInterventionsByStatusAndYear(f: DashboardFilters) {
+  const supabase = await createClient();
+  let query = supabase.from("interventions").select("validation_status, date");
+  if (f.project) query = query.eq("project_id", f.project);
+  if (f.sector) query = query.eq("sector_id", f.sector);
+  const { data } = await query;
+  const byStatus = new Map<string, number>();
+  const byYear = new Map<string, number>();
+  for (const row of data ?? []) {
+    byStatus.set(row.validation_status, (byStatus.get(row.validation_status) ?? 0) + 1);
+    if (row.date) {
+      const y = String(new Date(row.date).getFullYear());
+      byYear.set(y, (byYear.get(y) ?? 0) + 1);
+    }
+  }
+  return {
+    byStatus: Array.from(byStatus.entries()).map(([status, count]) => ({ status, count })),
+    byYear: Array.from(byYear.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([year, count]) => ({ year, count })),
+  };
+}
+
+export async function getIndicatorPerformance() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("indicator_results_with_rate")
+    .select("id, period, target_value, actual_value, achievement_rate, indicators(code, label)")
+    .order("period", { ascending: false })
+    .limit(8);
+  return (data as unknown as {
+    id: string; period: string; target_value: number | null; actual_value: number | null;
+    achievement_rate: number | null; indicators: { code: string; label: string } | null;
+  }[]) ?? [];
+}
+
+export async function getQualityAlertsSummary() {
+  const supabase = await createClient();
+  const [{ count: openCount }, { count: blockingCount }, { data: byType }] = await Promise.all([
+    supabase.from("anomalies").select("*", { count: "exact", head: true }).eq("status", "open"),
+    supabase.from("anomalies").select("*", { count: "exact", head: true }).eq("status", "open").eq("severity", "blocking"),
+    supabase.from("anomalies").select("anomaly_type").eq("status", "open"),
+  ]);
+  const typeCounts = new Map<string, number>();
+  for (const row of byType ?? []) {
+    typeCounts.set(row.anomaly_type, (typeCounts.get(row.anomaly_type) ?? 0) + 1);
+  }
+  return {
+    open: openCount ?? 0,
+    blocking: blockingCount ?? 0,
+    byType: Array.from(typeCounts.entries()).map(([type, count]) => ({ type, count })),
+  };
+}

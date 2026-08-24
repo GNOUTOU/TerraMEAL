@@ -1,0 +1,195 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { requireUser, canWriteOperationalData } from "@/lib/auth";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { ValidationStatusBadge, SeverityBadge } from "@/components/ui/Badge";
+import MapView from "@/components/map/MapView";
+import DocumentsPanel from "@/components/documents/DocumentsPanel";
+import { interventionsToFeatureCollection } from "@/lib/geo";
+import InterventionForm from "../InterventionForm";
+import ValidationActions from "./ValidationActions";
+import BeneficiaryForm from "./BeneficiaryForm";
+import { DATA_SOURCE_LABELS } from "@/lib/types";
+import type { Activity, Anomaly, BeneficiaryBreakdown, DocumentRecord, Infrastructure } from "@/lib/types";
+
+export default async function InterventionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { profile } = await requireUser();
+  const supabase = await createClient();
+
+  const { data: intervention } = await supabase.from("interventions_geo").select("*").eq("id", id).single();
+  if (!intervention) notFound();
+
+  const [{ data: infra }, { data: activity }, { data: beneficiaries }, { data: anomalies }, { data: documents }, { data: projects }, { data: sectors }, { data: zones }] =
+    await Promise.all([
+      supabase.from("infrastructures").select("*").eq("intervention_id", id).maybeSingle(),
+      supabase.from("activities").select("*").eq("intervention_id", id).maybeSingle(),
+      supabase.from("beneficiaries_breakdown").select("*").eq("intervention_id", id),
+      supabase.from("anomalies").select("*").eq("entity_table", "interventions").eq("entity_id", id).order("detected_at", { ascending: false }),
+      supabase.from("documents").select("*").eq("entity_table", "interventions").eq("entity_id", id).order("uploaded_at", { ascending: false }),
+      supabase.from("projects").select("id, name").order("name"),
+      supabase.from("sectors").select("id, name").eq("active", true).order("name"),
+      supabase.from("admin_zones").select("id, name").order("name"),
+    ]);
+
+  const canWrite = canWriteOperationalData(profile.role);
+  const canValidate = profile.role === "admin" || profile.role === "meal_sig";
+  const features = interventionsToFeatureCollection([intervention] as never[]);
+  const beneficiariesTotal = (beneficiaries ?? []).reduce((s, b) => s + b.count, 0);
+
+  return (
+    <div>
+      <PageHeader
+        title={intervention.name}
+        description={`${intervention.type} · ${intervention.project_name ?? ""}`}
+        actions={<ValidationStatusBadge status={intervention.validation_status} />}
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <dl className="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
+              <Info label="Projet" value={<Link href={`/projects/${intervention.project_id}`} className="text-emerald-600 hover:underline">{intervention.project_name}</Link>} />
+              <Info label="Secteur" value={intervention.sector_name ?? "—"} />
+              <Info label="Zone" value={intervention.admin_zone_name ?? "—"} />
+              <Info label="Date" value={intervention.date ?? "—"} />
+              <Info label="Statut opérationnel" value={intervention.status} />
+              <Info label="Bénéficiaires" value={(intervention.beneficiaries_total ?? beneficiariesTotal).toLocaleString("fr-FR")} />
+              <Info label="Source" value={DATA_SOURCE_LABELS[intervention.source as keyof typeof DATA_SOURCE_LABELS]} />
+              <Info label="Identifiant source" value={intervention.source_id ?? "—"} />
+              <Info label="Dernière mise à jour" value={new Date(intervention.last_updated_at).toLocaleDateString("fr-FR")} />
+            </dl>
+            {intervention.description && <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">{intervention.description}</p>}
+            {intervention.rejection_reason && (
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+                Motif de rejet : {intervention.rejection_reason}
+              </p>
+            )}
+          </Card>
+
+          {intervention.geom_json && (
+            <Card>
+              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Localisation</h2>
+              <div style={{ height: 260 }}>
+                <MapView points={features} zoom={11} />
+              </div>
+            </Card>
+          )}
+
+          {infra && (
+            <Card>
+              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Infrastructure</h2>
+              <dl className="grid grid-cols-3 gap-3 text-sm">
+                <Info label="Type" value={(infra as Infrastructure).infra_type} />
+                <Info label="Capacité" value={(infra as Infrastructure).capacity ?? "—"} />
+                <Info label="État" value={(infra as Infrastructure).functional_status} />
+              </dl>
+            </Card>
+          )}
+
+          {activity && (
+            <Card>
+              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Activité</h2>
+              <dl className="grid grid-cols-3 gap-3 text-sm">
+                <Info label="Type" value={(activity as Activity).activity_type} />
+                <Info label="Participants" value={(activity as Activity).participants_count ?? "—"} />
+                <Info label="Sessions" value={(activity as Activity).sessions_count ?? "—"} />
+              </dl>
+            </Card>
+          )}
+
+          <Card>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Bénéficiaires désagrégés</h2>
+            <table className="mb-3 w-full text-left text-sm">
+              <thead className="text-xs uppercase text-slate-400">
+                <tr>
+                  <th className="py-1">Sexe</th>
+                  <th className="py-1">Tranche d&apos;âge</th>
+                  <th className="py-1">Nombre</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {((beneficiaries as BeneficiaryBreakdown[]) ?? []).map((b) => (
+                  <tr key={b.id}>
+                    <td className="py-1">{b.sex ?? "—"}</td>
+                    <td className="py-1">{b.age_bracket ?? "—"}</td>
+                    <td className="py-1">{b.count}</td>
+                  </tr>
+                ))}
+                {(beneficiaries?.length ?? 0) === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-2 text-slate-400">
+                      Aucune désagrégation.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {canWrite && <BeneficiaryForm interventionId={id} />}
+          </Card>
+
+          {canWrite && (
+            <Card>
+              <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">Modifier</h2>
+              <InterventionForm
+                intervention={intervention as never}
+                infra={infra as Infrastructure | null}
+                activity={activity as Activity | null}
+                projects={projects ?? []}
+                sectors={sectors ?? []}
+                zones={zones ?? []}
+              />
+            </Card>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {canValidate && (
+            <Card>
+              <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Workflow de validation</h2>
+              <ValidationActions id={id} current={intervention.validation_status} />
+            </Card>
+          )}
+
+          <Card>
+            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Anomalies</h2>
+            <div className="space-y-2">
+              {((anomalies as Anomaly[]) ?? []).map((a) => (
+                <div key={a.id} className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800">
+                  <div className="mb-1 flex items-center justify-between">
+                    <SeverityBadge severity={a.severity} />
+                    <span className="text-slate-400">{a.status}</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">{a.description}</p>
+                </div>
+              ))}
+              {(anomalies?.length ?? 0) === 0 && <p className="text-sm text-slate-400">Aucune anomalie détectée.</p>}
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Documents / preuves</h2>
+            <DocumentsPanel
+              entityTable="interventions"
+              entityId={id}
+              documents={(documents as DocumentRecord[]) ?? []}
+              canWrite={canWrite}
+              revalidate={`/interventions/${id}`}
+            />
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-slate-400">{label}</dt>
+      <dd className="text-slate-700 dark:text-slate-200">{value}</dd>
+    </div>
+  );
+}
