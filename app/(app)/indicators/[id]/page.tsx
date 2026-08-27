@@ -4,9 +4,9 @@ import { requireUser, canWriteOperationalData } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import EChart from "@/components/charts/EChart";
-import EntityManager from "@/components/ui/EntityManager";
 import { Gauge } from "lucide-react";
 import type { IndicatorResult } from "@/lib/types";
+import ResultsTable from "./ResultsTable";
 
 export default async function IndicatorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -78,50 +78,12 @@ export default async function IndicatorDetailPage({ params }: { params: Promise<
 
       <Card className="mt-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Résultats par période</h2>
-        <EntityManager<IndicatorResult & Record<string, unknown>>
-          table="indicator_results"
-          title="Résultat"
-          revalidate={`/indicators/${id}`}
-          canWrite={canWrite}
+        <ResultsTable
+          indicatorId={id}
           rows={rows as (IndicatorResult & Record<string, unknown>)[]}
-          columns={[
-            { key: "period", label: "Période" },
-            { key: "target_value", label: "Cible" },
-            { key: "actual_value", label: "Réalisé" },
-            { key: "achievement_rate", label: "Taux", render: (r) => (r.achievement_rate != null ? `${r.achievement_rate}%` : "—") },
-            { key: "validation_status", label: "Statut" },
-          ]}
-          fields={[
-            { name: "indicator_id", label: "Indicateur", type: "hidden", defaultValue: id },
-            { name: "period", label: "Période (ex: 2026-T1)", required: true },
-            { name: "year", label: "Année", type: "number" },
-            {
-              name: "project_id",
-              label: "Projet",
-              type: "select",
-              options: (projects ?? []).map((p) => ({ value: p.id, label: p.name })),
-            },
-            {
-              name: "admin_zone_id",
-              label: "Zone",
-              type: "select",
-              options: (zones ?? []).map((z) => ({ value: z.id, label: z.name })),
-            },
-            { name: "target_value", label: "Cible", type: "number" },
-            { name: "actual_value", label: "Réalisé", type: "number" },
-            {
-              name: "validation_status",
-              label: "Statut",
-              type: "select",
-              defaultValue: "validated",
-              options: [
-                { value: "imported", label: "Importé" },
-                { value: "to_verify", label: "À vérifier" },
-                { value: "validated", label: "Validé" },
-                { value: "published", label: "Publié" },
-              ],
-            },
-          ]}
+          projects={projects ?? []}
+          zones={zones ?? []}
+          canWrite={canWrite}
         />
       </Card>
     </div>

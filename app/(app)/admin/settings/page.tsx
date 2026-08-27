@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import EntityManager from "@/components/ui/EntityManager";
 import { Info } from "lucide-react";
+import SettingsTable from "./SettingsTable";
 
 interface AppSetting {
   key: string;
@@ -22,24 +22,7 @@ export default async function SettingsAdminPage() {
           d&apos;alerte qualité. La valeur est au format JSON — ex. <code>true</code>, <code>180</code>, <code>&quot;texte&quot;</code>.
         </span>
       </p>
-      <EntityManager<AppSetting & Record<string, unknown>>
-        table="app_settings"
-        title="Paramètre"
-        revalidate="/admin/settings"
-        canWrite
-        idKey="key"
-        rows={settings as (AppSetting & Record<string, unknown>)[]}
-        columns={[
-          { key: "key", label: "Clé" },
-          { key: "description", label: "Description" },
-          { key: "value", label: "Valeur", render: (r) => JSON.stringify(r.value) },
-        ]}
-        fields={[
-          { name: "key", label: "Clé", required: true },
-          { name: "description", label: "Description" },
-          { name: "value", label: "Valeur (JSON)", type: "json", required: true },
-        ]}
-      />
+      <SettingsTable rows={settings as (AppSetting & Record<string, unknown>)[]} />
     </div>
   );
 }
