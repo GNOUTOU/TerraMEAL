@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" width="360" height="360" role="img" aria-label="TerraMEAL">
+<g transform="translate(40,44) scale(0.53)">
+  <defs>
+    <linearGradient id="cGrad" x1="86" y1="120" x2="426" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17A398"/><stop offset="1" stop-color="#0B4F6C"/>
+    </linearGradient>
+    <clipPath id="cClip"><circle cx="256" cy="272" r="168"/></clipPath>
+  </defs>
+  <circle cx="256" cy="272" r="168" fill="url(#cGrad)"/>
+  <g clip-path="url(#cClip)" fill="none" stroke="#FFFFFF" stroke-width="7" opacity=".38">
+    <ellipse cx="256" cy="272" rx="78" ry="168"/>
+    <path d="M88 272h336"/><path d="M112 188h288"/><path d="M112 356h288"/>
+  </g>
+  <g clip-path="url(#cClip)" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" fill="none">
+    <path d="M150 348 230 272 316 318 366 250"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="150" cy="348" r="20"/><circle cx="230" cy="272" r="20"/>
+    <circle cx="316" cy="318" r="20"/>
+  </g>
+  <g fill="#F2A03D">
+    <circle cx="150" cy="348" r="10"/><circle cx="230" cy="272" r="10"/><circle cx="316" cy="318" r="10"/>
+  </g>
+  <path d="M366 24c-46 0-83 37-83 83 0 62 83 143 83 143s83-81 83-143c0-46-37-83-83-83z" fill="#C75B39" stroke="#FFFFFF" stroke-width="18"/>
+  <circle cx="366" cy="107" r="33" fill="#FFFFFF"/>
+</g>
+</svg>

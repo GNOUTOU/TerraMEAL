@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import EntityManager from "@/components/ui/EntityManager";
 import type { AdminZone } from "@/lib/types";
+import { Info } from "lucide-react";
 
 const LEVEL_LABELS: Record<string, string> = {
   country: "Pays",
@@ -17,9 +18,12 @@ export default async function ZonesAdminPage() {
 
   return (
     <div>
-      <p className="mb-4 text-xs text-slate-400">
-        La géométrie (polygones) des zones s&apos;importe via un fichier GeoJSON dans le module Import. Cette page gère la
-        hiérarchie administrative (pays → région → province → commune → localité).
+      <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-400">
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>
+          La géométrie (polygones) des zones s&apos;importe via un fichier GeoJSON dans le module Import. Cette page gère la
+          hiérarchie administrative (pays → région → province → commune → localité).
+        </span>
       </p>
       <EntityManager<AdminZone>
         table="admin_zones"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { parseCsvFile, parseExcelFile, parseGeoJsonFile, detectFileType, type ParsedFile } from "@/lib/import/parse";
 import { submitFileImport } from "@/lib/actions/import";
+import { FileUp, ArrowLeftRight, CheckCircle2, ArrowLeft, ArrowRight, UploadCloud, CircleAlert } from "lucide-react";
 
 const TARGET_FIELDS = [
   { value: "name", label: "Nom de la réalisation" },
@@ -90,20 +91,33 @@ export default function FileImportWizard({ projects }: { projects: { id: string;
   return (
     <div>
       <ol className="mb-6 flex gap-6 text-xs text-slate-400">
-        <li className={step >= 1 ? "font-semibold text-emerald-600" : ""}>1. Fichier</li>
-        <li className={step >= 2 ? "font-semibold text-emerald-600" : ""}>2. Correspondance des colonnes</li>
-        <li className={step >= 3 ? "font-semibold text-emerald-600" : ""}>3. Résultat</li>
+        <li className={`flex items-center gap-1.5 ${step >= 1 ? "font-semibold text-emerald-600" : ""}`}>
+          <FileUp size={14} /> 1. Fichier
+        </li>
+        <li className={`flex items-center gap-1.5 ${step >= 2 ? "font-semibold text-emerald-600" : ""}`}>
+          <ArrowLeftRight size={14} /> 2. Correspondance des colonnes
+        </li>
+        <li className={`flex items-center gap-1.5 ${step >= 3 ? "font-semibold text-emerald-600" : ""}`}>
+          <CheckCircle2 size={14} /> 3. Résultat
+        </li>
       </ol>
 
       {step === 1 && (
         <div>
-          <p className="mb-3 text-sm text-slate-500">Formats pris en charge : CSV, Excel (.xlsx), GeoJSON.</p>
+          <p className="mb-3 flex items-center gap-1.5 text-sm text-slate-500">
+            <FileUp size={15} className="text-slate-400" /> Formats pris en charge : CSV, Excel (.xlsx), GeoJSON.
+          </p>
           <input
             type="file"
             accept=".csv,.xlsx,.xls,.geojson,.json"
             onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
             className="text-sm"
           />
+          {error && (
+            <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+              <CircleAlert size={14} className="mt-0.5 shrink-0" /> {error}
+            </p>
+          )}
         </div>
       )}
 
@@ -179,18 +193,22 @@ export default function FileImportWizard({ projects }: { projects: { id: string;
             </table>
           </div>
 
-          {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
+          {error && (
+            <p className="mb-3 flex items-start gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+              <CircleAlert size={14} className="mt-0.5 shrink-0" /> {error}
+            </p>
+          )}
 
           <div className="flex gap-2">
-            <button onClick={() => setStep(1)} className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
-              Retour
+            <button onClick={() => setStep(1)} className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+              <ArrowLeft size={15} /> Retour
             </button>
             <button
               onClick={handleImport}
               disabled={pending || !projectId}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
             >
-              {pending ? "Import en cours..." : `Importer ${parsed.rows.length} ligne(s)`}
+              <UploadCloud size={15} /> {pending ? "Import en cours..." : `Importer ${parsed.rows.length} ligne(s)`}
             </button>
           </div>
         </div>
@@ -198,11 +216,12 @@ export default function FileImportWizard({ projects }: { projects: { id: string;
 
       {step === 3 && result && (
         <div className="space-y-3">
-          <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+          <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
             Import terminé : {result.success} ligne(s) placée(s) en STAGING, {result.errors} erreur(s).
           </p>
-          <Link href="/import/review" className="inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-            Passer à la revue STAGING →
+          <Link href="/import/review" className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+            Passer à la revue STAGING <ArrowRight size={15} />
           </Link>
         </div>
       )}

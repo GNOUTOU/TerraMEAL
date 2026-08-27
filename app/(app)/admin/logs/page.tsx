@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityLogEntry, Profile } from "@/lib/types";
+import { Info } from "lucide-react";
 
 const ACTION_LABELS: Record<string, string> = {
   create: "Création",
@@ -38,7 +39,8 @@ export default async function LogsAdminPage({
 
   return (
     <div>
-      <p className="mb-4 text-xs text-slate-400">
+      <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-400">
+        <Info size={14} className="mt-0.5 shrink-0" />
         Traçabilité (35/52) : qui a fait quoi, quand, sur quelle donnée. Généré automatiquement par des triggers sur
         les tables sensibles (projets, interventions, résultats d&apos;indicateurs, profils).
       </p>

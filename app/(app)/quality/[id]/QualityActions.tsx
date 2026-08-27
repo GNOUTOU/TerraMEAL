@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { UserCheck, CheckCircle2, XCircle, Archive } from "lucide-react";
 import { updateAnomalyStatus } from "@/lib/actions/anomalies";
 
 export default function QualityActions({ id, status }: { id: string; status: string }) {
@@ -28,23 +29,39 @@ export default function QualityActions({ id, status }: { id: string; status: str
       />
       <div className="flex flex-wrap gap-2">
         {status !== "in_review" && (
-          <button disabled={pending} onClick={() => apply("in_review")} className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 disabled:opacity-60">
-            Prendre en charge
+          <button
+            disabled={pending}
+            onClick={() => apply("in_review")}
+            className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 disabled:opacity-60"
+          >
+            <UserCheck size={14} /> Prendre en charge
           </button>
         )}
         {status !== "corrected" && (
-          <button disabled={pending} onClick={() => apply("corrected")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60">
-            Marquer comme corrigée
+          <button
+            disabled={pending}
+            onClick={() => apply("corrected")}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            <CheckCircle2 size={14} /> Marquer comme corrigée
           </button>
         )}
         {status !== "rejected" && (
-          <button disabled={pending} onClick={() => apply("rejected")} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 disabled:opacity-60">
-            Rejeter (faux positif)
+          <button
+            disabled={pending}
+            onClick={() => apply("rejected")}
+            className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 disabled:opacity-60"
+          >
+            <XCircle size={14} /> Rejeter (faux positif)
           </button>
         )}
         {status !== "closed" && (
-          <button disabled={pending} onClick={() => apply("closed")} className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 disabled:opacity-60">
-            Clôturer
+          <button
+            disabled={pending}
+            onClick={() => apply("closed")}
+            className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 disabled:opacity-60"
+          >
+            <Archive size={14} /> Clôturer
           </button>
         )}
       </div>

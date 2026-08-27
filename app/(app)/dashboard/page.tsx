@@ -4,6 +4,7 @@ import { KpiCard, Card } from "@/components/ui/Card";
 import FilterBar from "@/components/ui/FilterBar";
 import EChart from "@/components/charts/EChart";
 import Link from "next/link";
+import { LayoutDashboard, FolderKanban, MapPinned, Users, Landmark, ShieldAlert, PartyPopper, ArrowRight } from "lucide-react";
 import {
   getDashboardKpis,
   getFilterOptions,
@@ -40,6 +41,7 @@ export default async function DashboardPage({
       <PageHeader
         title={`Bonjour, ${profile.full_name.split(" ")[0]}`}
         description="Vue d'ensemble du portefeuille de projets et des réalisations."
+        icon={LayoutDashboard}
       />
 
       <FilterBar
@@ -52,10 +54,10 @@ export default async function DashboardPage({
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard label="Projets actifs" value={kpis?.projects_active ?? "–"} hint={`sur ${kpis?.projects_total ?? 0} au total`} />
-        <KpiCard label="Réalisations" value={kpis?.interventions_count ?? "–"} hint="validées / publiées" />
-        <KpiCard label="Bénéficiaires (agrégés)" value={(kpis?.beneficiaries_total ?? 0).toLocaleString("fr-FR")} />
-        <KpiCard label="Communes couvertes" value={kpis?.communes_covered ?? "–"} hint={`${kpis?.localities_covered ?? 0} localités`} />
+        <KpiCard icon={FolderKanban} label="Projets actifs" value={kpis?.projects_active ?? "–"} hint={`sur ${kpis?.projects_total ?? 0} au total`} />
+        <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={kpis?.interventions_count ?? "–"} hint="validées / publiées" />
+        <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={(kpis?.beneficiaries_total ?? 0).toLocaleString("fr-FR")} />
+        <KpiCard icon={Landmark} color="amber" label="Communes couvertes" value={kpis?.communes_covered ?? "–"} hint={`${kpis?.localities_covered ?? 0} localités`} />
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -148,13 +150,17 @@ export default async function DashboardPage({
       {canSeeQuality && (
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Alertes qualité (18.4)</h2>
-            <Link href="/quality" className="text-xs text-emerald-600 hover:underline">
-              Voir le module Qualité →
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <ShieldAlert size={16} className="text-slate-400" /> Alertes qualité (18.4)
+            </h2>
+            <Link href="/quality" className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+              Voir le module Qualité <ArrowRight size={12} />
             </Link>
           </div>
           {quality.open === 0 ? (
-            <p className="text-sm text-slate-400">Aucune anomalie ouverte. 🎉</p>
+            <p className="flex items-center gap-1.5 text-sm text-slate-400">
+              <PartyPopper size={15} className="text-emerald-500" /> Aucune anomalie ouverte.
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               <span className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldCheck, Globe2, XCircle, Archive, Check } from "lucide-react";
 import { setValidationStatus } from "@/lib/actions/interventions";
 
 export default function ValidationActions({ id, current }: { id: string; current: string }) {
@@ -24,28 +25,36 @@ export default function ValidationActions({ id, current }: { id: string; current
         <button
           disabled={pending}
           onClick={() => transition("validated")}
-          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
         >
-          Valider
+          <ShieldCheck size={14} /> Valider
         </button>
       )}
       {current === "validated" && (
         <button
           disabled={pending}
           onClick={() => transition("published")}
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
         >
-          Publier
+          <Globe2 size={14} /> Publier
         </button>
       )}
       {current !== "rejected" && (
-        <button disabled={pending} onClick={() => setShowReject((v) => !v)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300">
-          Rejeter
+        <button
+          disabled={pending}
+          onClick={() => setShowReject((v) => !v)}
+          className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300"
+        >
+          <XCircle size={14} /> Rejeter
         </button>
       )}
       {current !== "archived" && (
-        <button disabled={pending} onClick={() => transition("archived")} className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
-          Archiver
+        <button
+          disabled={pending}
+          onClick={() => transition("archived")}
+          className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+        >
+          <Archive size={14} /> Archiver
         </button>
       )}
       {showReject && (
@@ -59,9 +68,9 @@ export default function ValidationActions({ id, current }: { id: string; current
           <button
             disabled={pending || !reason}
             onClick={() => transition("rejected", reason)}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
           >
-            Confirmer
+            <Check size={14} /> Confirmer
           </button>
         </div>
       )}

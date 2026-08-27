@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { SeverityBadge } from "@/components/ui/Badge";
 import { ANOMALY_TYPE_LABELS, DATA_SOURCE_LABELS } from "@/lib/types";
 import QualityActions from "./QualityActions";
+import { ShieldAlert } from "lucide-react";
 
 export default async function AnomalyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,7 +32,7 @@ export default async function AnomalyDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <PageHeader title={ANOMALY_TYPE_LABELS[anomaly.anomaly_type as keyof typeof ANOMALY_TYPE_LABELS]} actions={<SeverityBadge severity={anomaly.severity} />} />
+      <PageHeader icon={ShieldAlert} title={ANOMALY_TYPE_LABELS[anomaly.anomaly_type as keyof typeof ANOMALY_TYPE_LABELS]} actions={<SeverityBadge severity={anomaly.severity} />} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">

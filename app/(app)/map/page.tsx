@@ -4,6 +4,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import { interventionsToFeatureCollection, zonesToFeatureCollection } from "@/lib/geo";
 import MapView from "@/components/map/MapView";
+import { Map, MapPin } from "lucide-react";
 
 export default async function MapPage({
   searchParams,
@@ -30,7 +31,7 @@ export default async function MapPage({
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Carte (WebGIS)" description="Visualisation cartographique de toutes les interventions validées et publiées." />
+      <PageHeader title="Carte (WebGIS)" description="Visualisation cartographique de toutes les interventions validées et publiées." icon={Map} />
 
       <FilterBar
         filters={[
@@ -43,7 +44,9 @@ export default async function MapPage({
       <div className="relative flex-1" style={{ minHeight: 500 }}>
         <MapView points={points} polygons={polygons} exportable />
         <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded-lg bg-white/95 p-3 text-xs shadow-lg backdrop-blur dark:bg-slate-900/95">
-          <p className="mb-1.5 font-semibold text-slate-600 dark:text-slate-300">Légende — secteurs</p>
+          <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-300">
+            <MapPin size={13} /> Légende — secteurs
+          </p>
           <div className="flex flex-col gap-1">
             {(sectors ?? []).map((s) => (
               <div key={s.id} className="flex items-center gap-1.5">

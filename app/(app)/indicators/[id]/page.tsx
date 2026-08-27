@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import EChart from "@/components/charts/EChart";
 import EntityManager from "@/components/ui/EntityManager";
+import { Gauge } from "lucide-react";
 import type { IndicatorResult } from "@/lib/types";
 
 export default async function IndicatorDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,7 @@ export default async function IndicatorDetailPage({ params }: { params: Promise<
 
   return (
     <div>
-      <PageHeader title={indicator.label} description={`${indicator.code} · ${(indicator as unknown as { sectors: { name: string } | null }).sectors?.name ?? ""}`} />
+      <PageHeader icon={Gauge} title={indicator.label} description={`${indicator.code} · ${(indicator as unknown as { sectors: { name: string } | null }).sectors?.name ?? ""}`} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>

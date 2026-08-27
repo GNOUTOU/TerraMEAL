@@ -8,6 +8,7 @@ import MapView from "@/components/map/MapView";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import { interventionsToFeatureCollection } from "@/lib/geo";
 import ExportMenu from "@/components/ui/ExportMenu";
+import { MapPinned, Plus } from "lucide-react";
 
 export default async function InterventionsPage({
   searchParams,
@@ -35,6 +36,7 @@ export default async function InterventionsPage({
       <PageHeader
         title="Interventions"
         description="Réalisations géolocalisées : infrastructures, activités et interventions."
+        icon={MapPinned}
         actions={
           <>
             <ExportMenu
@@ -46,8 +48,8 @@ export default async function InterventionsPage({
               ]}
             />
             {canWriteOperationalData(profile.role) && (
-              <Link href="/interventions/new" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
-                Nouvelle réalisation
+              <Link href="/interventions/new" className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
+                <Plus size={15} /> Nouvelle réalisation
               </Link>
             )}
           </>
@@ -78,7 +80,7 @@ export default async function InterventionsPage({
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title="Aucune réalisation trouvée" description="Ajustez les filtres ou créez une nouvelle réalisation." />
+        <EmptyState icon={MapPinned} title="Aucune réalisation trouvée" description="Ajustez les filtres ou créez une nouvelle réalisation." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-sm">

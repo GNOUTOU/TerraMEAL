@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/PageHeader";
 import { DATA_SOURCE_LABELS } from "@/lib/types";
+import { History } from "lucide-react";
 import type { ImportBatch } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -19,7 +20,7 @@ export default async function ImportHistoryPage() {
   return (
     <div>
       {batches.length === 0 ? (
-        <EmptyState title="Aucun import réalisé" />
+        <EmptyState icon={History} title="Aucun import réalisé" />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-sm">

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import EntityManager from "@/components/ui/EntityManager";
+import { Info } from "lucide-react";
 
 interface AppSetting {
   key: string;
@@ -14,9 +15,12 @@ export default async function SettingsAdminPage() {
 
   return (
     <div>
-      <p className="mb-4 text-xs text-slate-400">
-        Paramètres généraux de la plateforme (37/39) : portail public, seuils de fraîcheur des données, seuils
-        d&apos;alerte qualité. La valeur est au format JSON — ex. <code>true</code>, <code>180</code>, <code>&quot;texte&quot;</code>.
+      <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-400">
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>
+          Paramètres généraux de la plateforme (37/39) : portail public, seuils de fraîcheur des données, seuils
+          d&apos;alerte qualité. La valeur est au format JSON — ex. <code>true</code>, <code>180</code>, <code>&quot;texte&quot;</code>.
+        </span>
       </p>
       <EntityManager<AppSetting & Record<string, unknown>>
         table="app_settings"

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser, canWriteOperationalData } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/PageHeader";
 import EntityManager from "@/components/ui/EntityManager";
+import { Gauge } from "lucide-react";
 import type { Indicator } from "@/lib/types";
 
 export default async function IndicatorsPage() {
@@ -18,7 +19,7 @@ export default async function IndicatorsPage() {
 
   return (
     <div>
-      <PageHeader title="Indicateurs" description="Référentiel d'indicateurs : définitions, cibles et méthodes de calcul." />
+      <PageHeader title="Indicateurs" description="Référentiel d'indicateurs : définitions, cibles et méthodes de calcul." icon={Gauge} />
       <EntityManager<Indicator & Record<string, unknown>>
         table="indicators"
         title="Indicateur"

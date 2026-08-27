@@ -52,7 +52,7 @@ export default function Topbar({ profile }: { profile: Profile }) {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 md:px-6 dark:border-slate-800 dark:bg-slate-900">
+    <header className="flex h-16 items-center gap-4 border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur-sm md:px-6 dark:border-slate-800 dark:bg-slate-900/95">
       <div ref={searchRef} className="relative flex-1 max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
         <input

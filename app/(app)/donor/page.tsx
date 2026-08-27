@@ -8,6 +8,8 @@ import ExportMenu from "@/components/ui/ExportMenu";
 import { interventionsToFeatureCollection } from "@/lib/geo";
 import Link from "next/link";
 import DonorSelect from "./DonorSelect";
+import SectionTitle from "@/components/ui/SectionTitle";
+import { HandCoins, FolderKanban, MapPinned, Users, Wallet, Map, Gauge } from "lucide-react";
 
 export default async function DonorViewPage({
   searchParams,
@@ -26,7 +28,7 @@ export default async function DonorViewPage({
   if (!donorId && donors && donors.length > 0) donorId = donors[0].id;
 
   if (!donorId) {
-    return <EmptyState title="Aucun bailleur associé" description="Ce compte n'est associé à aucun bailleur. Contactez un administrateur." />;
+    return <EmptyState icon={HandCoins} title="Aucun bailleur associé" description="Ce compte n'est associé à aucun bailleur. Contactez un administrateur." />;
   }
 
   const { data: donor } = await supabase.from("donors").select("*").eq("id", donorId).single();
@@ -51,6 +53,7 @@ export default async function DonorViewPage({
       <PageHeader
         title={`Vue Bailleur — ${donor?.name ?? ""}`}
         description="Portefeuille de projets financés, réalisations et indicateurs."
+        icon={HandCoins}
         actions={
           <div className="flex items-center gap-2">
             {donors && donors.length > 1 && <DonorSelect donors={donors} current={donorId} />}
@@ -60,17 +63,19 @@ export default async function DonorViewPage({
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard label="Projets financés" value={projectLinks?.length ?? 0} />
-        <KpiCard label="Réalisations" value={interventions?.length ?? 0} />
-        <KpiCard label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
+        <KpiCard icon={FolderKanban} label="Projets financés" value={projectLinks?.length ?? 0} />
+        <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventions?.length ?? 0} />
+        <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
         <KpiCard
+          icon={Wallet}
+          color="amber"
           label="Montant engagé"
           value={(projectLinks ?? []).reduce((s, l) => s + (l.amount ?? 0), 0).toLocaleString("fr-FR")}
         />
       </div>
 
       <Card className="mb-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Carte des réalisations</h2>
+        <SectionTitle icon={Map} className="mb-3">Carte des réalisations</SectionTitle>
         <div style={{ height: 320 }}>
           <MapView points={features} />
         </div>
@@ -78,7 +83,7 @@ export default async function DonorViewPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Projets financés</h2>
+          <SectionTitle icon={FolderKanban} className="mb-3">Projets financés</SectionTitle>
           <div className="space-y-2">
             {(projectLinks ?? []).map((l) => {
               const p = (l as unknown as { projects: { id: string; name: string; code: string; status: string } }).projects;
@@ -94,7 +99,7 @@ export default async function DonorViewPage({
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Indicateurs récents</h2>
+          <SectionTitle icon={Gauge} className="mb-3">Indicateurs récents</SectionTitle>
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase text-slate-400">
               <tr>

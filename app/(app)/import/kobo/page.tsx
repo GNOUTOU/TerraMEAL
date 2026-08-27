@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/PageHeader";
+import { Smartphone, Info } from "lucide-react";
 import SyncButton from "../SyncButton";
 import type { DataSource } from "@/lib/types";
 
@@ -12,15 +13,18 @@ export default async function KoboImportPage() {
 
   return (
     <div>
-      <p className="mb-4 text-xs text-slate-400">
-        Les formulaires KoboToolbox se configurent dans{" "}
-        <Link href="/admin/sources" className="text-emerald-600 hover:underline">
-          Administration → Sources de données
-        </Link>
-        . Chaque synchronisation récupère les nouvelles soumissions (RG03/RG04) et les place en STAGING pour revue.
+      <p className="mb-4 flex items-start gap-1.5 text-xs text-slate-400">
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>
+          Les formulaires KoboToolbox se configurent dans{" "}
+          <Link href="/admin/sources" className="text-emerald-600 hover:underline">
+            Administration → Sources de données
+          </Link>
+          . Chaque synchronisation récupère les nouvelles soumissions (RG03/RG04) et les place en STAGING pour revue.
+        </span>
       </p>
       {sources.length === 0 ? (
-        <EmptyState title="Aucune source KoboToolbox configurée" description="Ajoutez-en une dans Administration → Sources de données." />
+        <EmptyState icon={Smartphone} title="Aucune source KoboToolbox configurée" description="Ajoutez-en une dans Administration → Sources de données." />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {sources.map((s) => (

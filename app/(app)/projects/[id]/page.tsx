@@ -11,6 +11,8 @@ import DocumentsPanel from "@/components/documents/DocumentsPanel";
 import ProjectForm from "../ProjectForm";
 import MapView from "@/components/map/MapView";
 import type { DocumentRecord, IndicatorResult, Intervention, Project } from "@/lib/types";
+import { FolderKanban, MapPinned, Users, Layers, MapPin, HandCoins, Handshake, FileText, Map, Gauge, AlignLeft, Pencil, ArrowRight, Star } from "lucide-react";
+import SectionTitle from "@/components/ui/SectionTitle";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,20 +55,21 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <PageHeader
         title={project.name}
         description={project.code}
+        icon={FolderKanban}
         actions={<ProjectStatusBadge status={project.status} />}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard label="Réalisations" value={interventionsGeo?.length ?? 0} />
-        <KpiCard label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
-        <KpiCard label="Secteurs" value={sectorLinks?.length ?? 0} />
-        <KpiCard label="Zones couvertes" value={zoneLinks?.length ?? 0} />
+        <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventionsGeo?.length ?? 0} />
+        <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
+        <KpiCard icon={Layers} color="amber" label="Secteurs" value={sectorLinks?.length ?? 0} />
+        <KpiCard icon={MapPin} label="Zones couvertes" value={zoneLinks?.length ?? 0} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Description</h2>
+            <SectionTitle icon={AlignLeft}>Description</SectionTitle>
             <p className="text-sm text-slate-600 dark:text-slate-300">{project.description || "Aucune description."}</p>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Info label="Période" value={`${project.start_date ?? "?"} → ${project.end_date ?? "?"}`} />
@@ -77,7 +80,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </Card>
 
           <Card>
-            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Carte des réalisations</h2>
+            <SectionTitle icon={Map} className="mb-3">Carte des réalisations</SectionTitle>
             <div style={{ height: 320 }}>
               <MapView points={featureCollection} />
             </div>
@@ -85,9 +88,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
           <Card>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Réalisations ({interventionsGeo?.length ?? 0})</h2>
-              <Link href={`/interventions?project=${id}`} className="text-xs text-emerald-600 hover:underline">
-                Voir tout →
+              <SectionTitle icon={MapPinned} className="">Réalisations ({interventionsGeo?.length ?? 0})</SectionTitle>
+              <Link href={`/interventions?project=${id}`} className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                Voir tout <ArrowRight size={12} />
               </Link>
             </div>
             <div className="space-y-1.5">
@@ -106,7 +109,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </Card>
 
           <Card>
-            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Indicateurs</h2>
+            <SectionTitle icon={Gauge} className="mb-3">Indicateurs</SectionTitle>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase text-slate-400">
@@ -143,11 +146,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
         <div className="space-y-4">
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Bailleurs</h2>
+            <SectionTitle icon={HandCoins}>Bailleurs</SectionTitle>
             <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
               {(donorLinks ?? []).map((d) => (
                 <li key={d.donor_id} className="flex justify-between">
-                  <span>{(d as unknown as { donors: { name: string } }).donors?.name} {d.is_principal && "★"}</span>
+                  <span className="flex items-center gap-1">
+                    {(d as unknown as { donors: { name: string } }).donors?.name}
+                    {d.is_principal && <Star size={12} className="fill-amber-400 text-amber-400" />}
+                  </span>
                   {d.amount && <span className="text-slate-400">{d.amount.toLocaleString("fr-FR")} {d.currency}</span>}
                 </li>
               ))}
@@ -155,7 +161,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </ul>
           </Card>
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Partenaires</h2>
+            <SectionTitle icon={Handshake}>Partenaires</SectionTitle>
             <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
               {(partnerLinks ?? []).map((p) => (
                 <li key={p.partner_id}>{(p as unknown as { partners: { name: string } }).partners?.name}</li>
@@ -164,7 +170,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </ul>
           </Card>
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Secteurs</h2>
+            <SectionTitle icon={Layers}>Secteurs</SectionTitle>
             <div className="flex flex-wrap gap-1.5">
               {(sectorLinks ?? []).map((s) => (
                 <span
@@ -178,7 +184,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </div>
           </Card>
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Zones de couverture</h2>
+            <SectionTitle icon={MapPin}>Zones de couverture</SectionTitle>
             <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
               {(zoneLinks ?? []).map((z) => (
                 <li key={z.admin_zone_id}>{(z as unknown as { admin_zones: { name: string } }).admin_zones?.name}</li>
@@ -187,7 +193,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </ul>
           </Card>
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Documents</h2>
+            <SectionTitle icon={FileText}>Documents</SectionTitle>
             <DocumentsPanel
               entityTable="projects"
               entityId={id}
@@ -201,7 +207,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       {canWrite && (
         <Card className="mt-6">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">Modifier le projet</h2>
+          <SectionTitle icon={Pencil} className="mb-4">Modifier le projet</SectionTitle>
           <ProjectForm
             project={project as Project}
             sectors={ref.sectors}

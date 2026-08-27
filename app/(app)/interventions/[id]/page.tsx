@@ -13,6 +13,8 @@ import ValidationActions from "./ValidationActions";
 import BeneficiaryForm from "./BeneficiaryForm";
 import { DATA_SOURCE_LABELS } from "@/lib/types";
 import type { Activity, Anomaly, BeneficiaryBreakdown, DocumentRecord, Infrastructure } from "@/lib/types";
+import { MapPinned, Map, HardHat, CalendarCheck, Users2, ShieldAlert, FileText, Pencil, ShieldCheck } from "lucide-react";
+import SectionTitle from "@/components/ui/SectionTitle";
 
 export default async function InterventionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,6 +46,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
       <PageHeader
         title={intervention.name}
         description={`${intervention.type} · ${intervention.project_name ?? ""}`}
+        icon={MapPinned}
         actions={<ValidationStatusBadge status={intervention.validation_status} />}
       />
 
@@ -71,7 +74,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
 
           {intervention.geom_json && (
             <Card>
-              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Localisation</h2>
+              <SectionTitle icon={Map} className="mb-3">Localisation</SectionTitle>
               <div style={{ height: 260 }}>
                 <MapView points={features} zoom={11} />
               </div>
@@ -80,7 +83,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
 
           {infra && (
             <Card>
-              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Infrastructure</h2>
+              <SectionTitle icon={HardHat} className="mb-3">Infrastructure</SectionTitle>
               <dl className="grid grid-cols-3 gap-3 text-sm">
                 <Info label="Type" value={(infra as Infrastructure).infra_type} />
                 <Info label="Capacité" value={(infra as Infrastructure).capacity ?? "—"} />
@@ -91,7 +94,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
 
           {activity && (
             <Card>
-              <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Activité</h2>
+              <SectionTitle icon={CalendarCheck} className="mb-3">Activité</SectionTitle>
               <dl className="grid grid-cols-3 gap-3 text-sm">
                 <Info label="Type" value={(activity as Activity).activity_type} />
                 <Info label="Participants" value={(activity as Activity).participants_count ?? "—"} />
@@ -101,7 +104,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
           )}
 
           <Card>
-            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Bénéficiaires désagrégés</h2>
+            <SectionTitle icon={Users2} className="mb-3">Bénéficiaires désagrégés</SectionTitle>
             <table className="mb-3 w-full text-left text-sm">
               <thead className="text-xs uppercase text-slate-400">
                 <tr>
@@ -132,7 +135,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
 
           {canWrite && (
             <Card>
-              <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">Modifier</h2>
+              <SectionTitle icon={Pencil} className="mb-4">Modifier</SectionTitle>
               <InterventionForm
                 intervention={intervention as never}
                 infra={infra as Infrastructure | null}
@@ -148,13 +151,13 @@ export default async function InterventionDetailPage({ params }: { params: Promi
         <div className="space-y-4">
           {canValidate && (
             <Card>
-              <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Workflow de validation</h2>
+              <SectionTitle icon={ShieldCheck}>Workflow de validation</SectionTitle>
               <ValidationActions id={id} current={intervention.validation_status} />
             </Card>
           )}
 
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Anomalies</h2>
+            <SectionTitle icon={ShieldAlert}>Anomalies</SectionTitle>
             <div className="space-y-2">
               {((anomalies as Anomaly[]) ?? []).map((a) => (
                 <div key={a.id} className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800">
@@ -170,7 +173,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
           </Card>
 
           <Card>
-            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Documents / preuves</h2>
+            <SectionTitle icon={FileText}>Documents / preuves</SectionTitle>
             <DocumentsPanel
               entityTable="interventions"
               entityId={id}

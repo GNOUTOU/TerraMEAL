@@ -6,6 +6,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { ProjectStatusBadge } from "@/components/ui/Badge";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import ExportMenu from "@/components/ui/ExportMenu";
+import { FolderKanban, Plus } from "lucide-react";
 import type { Project } from "@/lib/types";
 
 export default async function ProjectsPage({
@@ -36,12 +37,13 @@ export default async function ProjectsPage({
       <PageHeader
         title="Projets"
         description="Portefeuille de projets et programmes."
+        icon={FolderKanban}
         actions={
           <>
             <ExportMenu baseUrl="/api/export/projects" formats={[{ format: "csv", label: "CSV" }, { format: "excel", label: "Excel" }]} />
             {canWriteOperationalData(profile.role) && (
-              <Link href="/projects/new" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
-                Nouveau projet
+              <Link href="/projects/new" className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
+                <Plus size={15} /> Nouveau projet
               </Link>
             )}
           </>
@@ -67,7 +69,7 @@ export default async function ProjectsPage({
       />
 
       {!projects || projects.length === 0 ? (
-        <EmptyState title="Aucun projet trouvé" description="Ajustez les filtres ou créez un nouveau projet." />
+        <EmptyState icon={FolderKanban} title="Aucun projet trouvé" description="Ajustez les filtres ou créez un nouveau projet." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-sm">

@@ -6,6 +6,7 @@ import { KpiCard } from "@/components/ui/Card";
 import { SeverityBadge } from "@/components/ui/Badge";
 import { ANOMALY_TYPE_LABELS, DATA_SOURCE_LABELS } from "@/lib/types";
 import type { Anomaly } from "@/lib/types";
+import { ShieldCheck, ShieldAlert, AlertOctagon, ListChecks } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   open: "Ouverte",
@@ -40,12 +41,12 @@ export default async function QualityPage({
 
   return (
     <div>
-      <PageHeader title="Qualité des données" description="Anomalies détectées automatiquement (25) et leur traitement (26/27)." />
+      <PageHeader title="Qualité des données" description="Anomalies détectées automatiquement (25) et leur traitement (26/27)." icon={ShieldCheck} />
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard label="Anomalies ouvertes" value={openCount ?? 0} />
-        <KpiCard label="Bloquantes" value={blockingCount ?? 0} hint="empêchent la publication (RG05)" />
-        <KpiCard label="Affichées" value={rows.length} />
+        <KpiCard icon={ShieldAlert} color="amber" label="Anomalies ouvertes" value={openCount ?? 0} />
+        <KpiCard icon={AlertOctagon} color="red" label="Bloquantes" value={blockingCount ?? 0} hint="empêchent la publication (RG05)" />
+        <KpiCard icon={ListChecks} color="blue" label="Affichées" value={rows.length} />
       </div>
 
       <FilterBar
@@ -70,7 +71,7 @@ export default async function QualityPage({
       />
 
       {rows.length === 0 ? (
-        <EmptyState title="Aucune anomalie" description="Le jeu de données correspondant aux filtres est propre." />
+        <EmptyState icon={ShieldCheck} title="Aucune anomalie" description="Le jeu de données correspondant aux filtres est propre." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-sm">

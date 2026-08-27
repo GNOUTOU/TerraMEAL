@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback } from "react";
+import { SlidersHorizontal, RotateCcw } from "lucide-react";
 
 export interface FilterOption {
   value: string;
@@ -36,6 +37,7 @@ export default function FilterBar({ filters }: { filters: FilterDef[] }) {
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
+      <SlidersHorizontal size={15} className="text-slate-400" />
       {filters.map((f) => (
         <select
           key={f.key}
@@ -54,9 +56,9 @@ export default function FilterBar({ filters }: { filters: FilterDef[] }) {
       {hasActive && (
         <button
           onClick={() => router.push(pathname)}
-          className="text-xs text-emerald-600 hover:underline"
+          className="flex items-center gap-1 text-xs text-emerald-600 hover:underline"
         >
-          Réinitialiser
+          <RotateCcw size={12} /> Réinitialiser
         </button>
       )}
     </div>
