@@ -74,12 +74,12 @@ export default function DocumentsPanel({
               </div>
             </div>
             <div className="flex shrink-0 gap-1">
-              <button onClick={() => handleOpen(d.file_path)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <Download size={14} />
+              <button onClick={() => handleOpen(d.file_path)} aria-label={`Télécharger — ${d.name}`} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <Download size={14} aria-hidden="true" />
               </button>
               {canWrite && (
-                <button onClick={() => handleDelete(d)} className="rounded p-1.5 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
-                  <Trash2 size={14} />
+                <button onClick={() => handleDelete(d)} aria-label={`Supprimer — ${d.name}`} className="rounded p-1.5 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
+                  <Trash2 size={14} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -89,10 +89,10 @@ export default function DocumentsPanel({
 
       {canWrite && (
         <form onSubmit={handleUpload} className="mt-4 space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <input type="file" name="file" required className="w-full text-xs" />
+          <input type="file" name="file" required aria-label="Sélectionner un fichier" className="w-full text-xs" />
           <div className="grid grid-cols-2 gap-2">
-            <input name="name" placeholder="Nom du document" className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800" />
-            <select name="visibility_level" defaultValue="restricted" className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800">
+            <input name="name" placeholder="Nom du document" aria-label="Nom du document" className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800" />
+            <select name="visibility_level" defaultValue="restricted" aria-label="Niveau de visibilité" className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800">
               {Object.entries(VISIBILITY_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}

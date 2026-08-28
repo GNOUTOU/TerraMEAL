@@ -74,7 +74,7 @@ export default function StagingReviewRow({
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-800">
-      <button onClick={() => setExpanded((v) => !v)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm">
+      <button onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm">
         <span className="font-medium text-slate-700 dark:text-slate-200">{fields.name || "(sans nom)"}</span>
         <span className="flex items-center gap-2 text-xs text-slate-400">
           {fields.type} {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

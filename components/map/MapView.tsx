@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
-import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import type { Map as MapLibreMap, MapMouseEvent, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Satellite, Map as MapIcon, Sun, Download, Check } from "lucide-react";
+import { Satellite, Map as MapIcon, Sun, Download, Check, Ruler, BoxSelect, X, Trash2 } from "lucide-react";
 
 export interface MapFeatureProperties {
   id: string;
@@ -87,6 +87,23 @@ const BASEMAPS: Record<string, { label: string; icon: typeof Satellite; style: S
 };
 
 const STORAGE_KEY = "terrameal:basemap";
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+function haversineKm(a: [number, number], b: [number, number]) {
+  const R = 6371;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLng = ((b[0] - a[0]) * Math.PI) / 180;
+  const lat1 = (a[1] * Math.PI) / 180;
+  const lat2 = (b[1] * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function formatDistance(km: number) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+}
+
+type Tool = "none" | "measure" | "select";
 
 export default function MapView({
   points,
@@ -98,6 +115,7 @@ export default function MapView({
   fitToData = true,
   onFeatureClick,
   exportable = false,
+  tools = false,
 }: {
   points?: GeoJSON.FeatureCollection<GeoJSON.Point, MapFeatureProperties>;
   polygons?: GeoJSON.FeatureCollection<GeoJSON.Geometry, { name?: string }>;
@@ -108,15 +126,24 @@ export default function MapView({
   fitToData?: boolean;
   onFeatureClick?: (props: MapFeatureProperties) => void;
   exportable?: boolean;
+  /** Active les outils de mesure de distance et de sélection rectangulaire. */
+  tools?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const dataRef = useRef({ points, polygons, onFeatureClick });
   const hiddenColorsRef = useRef<Set<string>>(new Set());
+  const toolRef = useRef<Tool>("none");
+  const measurePointsRef = useRef<[number, number][]>([]);
+  const dragStateRef = useRef<{ startPixel: [number, number] } | null>(null);
+  const selectionBoxRef = useRef<HTMLDivElement>(null);
 
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>("satellite");
   const [basemapMenuOpen, setBasemapMenuOpen] = useState(false);
   const [hiddenColors, setHiddenColors] = useState<Set<string>>(new Set());
+  const [activeTool, setActiveTool] = useState<Tool>("none");
+  const [measureKm, setMeasureKm] = useState(0);
+  const [selectionResults, setSelectionResults] = useState<MapFeatureProperties[] | null>(null);
 
   // Refs synchronisées après le rendu (jamais pendant) : elles servent uniquement aux handlers
   // MapLibre (mousemove/click) qui vivent hors du cycle de rendu React et ont besoin de lire
@@ -126,6 +153,9 @@ export default function MapView({
   });
   useEffect(() => {
     hiddenColorsRef.current = hiddenColors;
+  });
+  useEffect(() => {
+    toolRef.current = activeTool;
   });
 
   function visiblePoints() {
@@ -199,19 +229,20 @@ export default function MapView({
       }
 
       map.on("mouseenter", "points", () => {
-        map.getCanvas().style.cursor = "pointer";
+        if (toolRef.current === "none") map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseenter", "clusters", () => {
-        map.getCanvas().style.cursor = "pointer";
+        if (toolRef.current === "none") map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseleave", "points", () => {
-        map.getCanvas().style.cursor = "";
+        if (toolRef.current === "none") map.getCanvas().style.cursor = "";
       });
       map.on("mouseleave", "clusters", () => {
-        map.getCanvas().style.cursor = "";
+        if (toolRef.current === "none") map.getCanvas().style.cursor = "";
       });
 
       map.on("click", "points", (e) => {
+        if (toolRef.current !== "none") return;
         const f = e.features?.[0];
         if (!f) return;
         const props = f.properties as MapFeatureProperties;
@@ -238,12 +269,131 @@ export default function MapView({
       });
 
       map.on("click", "clusters", (e) => {
+        if (toolRef.current !== "none") return;
         const f = e.features?.[0];
         if (!f) return;
         const source = map.getSource("points") as maplibregl.GeoJSONSource;
         source.getClusterExpansionZoom(f.properties!.cluster_id).then((z) => {
           map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: z });
         });
+      });
+    }
+  }
+
+  function updateMeasureLayer() {
+    const map = mapRef.current;
+    if (!map || !map.getSource("measure-points")) return;
+    const pts = measurePointsRef.current;
+    (map.getSource("measure-points") as maplibregl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features: pts.map((p) => ({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: {} })),
+    });
+    (map.getSource("measure-line") as maplibregl.GeoJSONSource).setData(
+      pts.length > 1
+        ? { type: "Feature", geometry: { type: "LineString", coordinates: pts }, properties: {} }
+        : EMPTY_FC
+    );
+    let total = 0;
+    for (let i = 1; i < pts.length; i++) total += haversineKm(pts[i - 1], pts[i]);
+    setMeasureKm(total);
+  }
+
+  // Outils mesure/sélection — un seul jeu de handlers, branché une fois au montage, qui lit
+  // `toolRef` pour savoir quoi faire (évite de ré-attacher des listeners à chaque rendu).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !tools) return;
+
+    function onClick(e: MapMouseEvent) {
+      if (toolRef.current !== "measure") return;
+      measurePointsRef.current = [...measurePointsRef.current, [e.lngLat.lng, e.lngLat.lat]];
+      updateMeasureLayer();
+    }
+
+    function onMouseDown(e: MapMouseEvent) {
+      if (toolRef.current !== "select") return;
+      e.preventDefault();
+      map!.dragPan.disable();
+      dragStateRef.current = { startPixel: [e.point.x, e.point.y] };
+      const box = selectionBoxRef.current;
+      if (box) {
+        box.style.display = "block";
+        box.style.left = `${e.point.x}px`;
+        box.style.top = `${e.point.y}px`;
+        box.style.width = "0px";
+        box.style.height = "0px";
+      }
+    }
+
+    function onMouseMove(e: MapMouseEvent) {
+      if (!dragStateRef.current) return;
+      const [sx, sy] = dragStateRef.current.startPixel;
+      const box = selectionBoxRef.current;
+      if (!box) return;
+      const x = Math.min(sx, e.point.x);
+      const y = Math.min(sy, e.point.y);
+      box.style.left = `${x}px`;
+      box.style.top = `${y}px`;
+      box.style.width = `${Math.abs(e.point.x - sx)}px`;
+      box.style.height = `${Math.abs(e.point.y - sy)}px`;
+    }
+
+    function onMouseUp(e: MapMouseEvent) {
+      if (!dragStateRef.current || !map) return;
+      const [sx, sy] = dragStateRef.current.startPixel;
+      dragStateRef.current = null;
+      map.dragPan.enable();
+      const box = selectionBoxRef.current;
+      if (box) box.style.display = "none";
+
+      if (!map.getLayer("points")) return;
+      const features = map.queryRenderedFeatures(
+        [
+          [sx, sy],
+          [e.point.x, e.point.y],
+        ],
+        { layers: ["points"] }
+      );
+      const unique = new Map<string, MapFeatureProperties>();
+      for (const f of features) {
+        const props = f.properties as MapFeatureProperties;
+        if (props?.id) unique.set(props.id, props);
+      }
+      setSelectionResults(Array.from(unique.values()));
+    }
+
+    map.on("click", onClick);
+    map.on("mousedown", onMouseDown);
+    map.on("mousemove", onMouseMove);
+    map.on("mouseup", onMouseUp);
+    return () => {
+      map.off("click", onClick);
+      map.off("mousedown", onMouseDown);
+      map.off("mousemove", onMouseMove);
+      map.off("mouseup", onMouseUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tools]);
+
+  function addToolSources() {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!map.getSource("measure-line")) {
+      map.addSource("measure-line", { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: "measure-line",
+        type: "line",
+        source: "measure-line",
+        paint: { "line-color": "#f59e0b", "line-width": 3, "line-dasharray": [1, 1.5] },
+      });
+    }
+    if (!map.getSource("measure-points")) {
+      map.addSource("measure-points", { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: "measure-points",
+        type: "circle",
+        source: "measure-points",
+        paint: { "circle-radius": 5, "circle-color": "#f59e0b", "circle-stroke-width": 2, "circle-stroke-color": "#fff" },
       });
     }
   }
@@ -268,8 +418,15 @@ export default function MapView({
       zoom,
     });
     map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(
+      new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }),
+      "top-right"
+    );
     mapRef.current = map;
-    map.once("load", renderData);
+    map.once("load", () => {
+      renderData();
+      addToolSources();
+    });
 
     return () => {
       map.remove();
@@ -294,7 +451,11 @@ export default function MapView({
     const map = mapRef.current;
     if (!map) return;
     map.setStyle(BASEMAPS[key].style);
-    map.once("style.load", renderData);
+    map.once("style.load", () => {
+      renderData();
+      addToolSources();
+      updateMeasureLayer();
+    });
   }
 
   function toggleSector(color: string) {
@@ -304,6 +465,18 @@ export default function MapView({
       else next.add(color);
       return next;
     });
+  }
+
+  function selectTool(tool: Tool) {
+    setActiveTool((prev) => (prev === tool ? "none" : tool));
+    setSelectionResults(null);
+    const map = mapRef.current;
+    if (map) map.getCanvas().style.cursor = "";
+  }
+
+  function clearMeasure() {
+    measurePointsRef.current = [];
+    updateMeasureLayer();
   }
 
   function handleExportPng() {
@@ -319,34 +492,110 @@ export default function MapView({
 
   return (
     <div style={{ position: "relative", height, width: "100%" }}>
-      <div ref={containerRef} style={{ height: "100%", width: "100%", borderRadius: "0.75rem", overflow: "hidden" }} />
+      <div
+        ref={containerRef}
+        style={{ height: "100%", width: "100%", borderRadius: "0.75rem", overflow: "hidden", cursor: activeTool === "select" ? "crosshair" : activeTool === "measure" ? "crosshair" : undefined }}
+      />
+      <div
+        ref={selectionBoxRef}
+        className="pointer-events-none absolute z-20 hidden border-2 border-dashed border-blue-500 bg-blue-500/10"
+      />
 
-      {/* Sélecteur de fond de carte */}
-      <div className="absolute left-3 top-3 z-10">
-        <button
-          onClick={() => setBasemapMenuOpen((v) => !v)}
-          className="flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-lg backdrop-blur hover:bg-white dark:bg-slate-900/95 dark:text-slate-300"
-        >
-          <CurrentIcon size={13} /> {BASEMAPS[basemap].label}
-        </button>
-        {basemapMenuOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-            {(Object.keys(BASEMAPS) as (keyof typeof BASEMAPS)[]).map((key) => {
-              const B = BASEMAPS[key];
-              return (
-                <button
-                  key={key}
-                  onClick={() => changeBasemap(key)}
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-medium ${
-                    key === basemap ? "text-emerald-600" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <B.icon size={13} className="shrink-0" />
-                  <span className="flex-1">{B.label}</span>
-                  {key === basemap && <Check size={13} />}
-                </button>
-              );
-            })}
+      {/* Sélecteur de fond de carte + outils */}
+      <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
+        <div className="relative">
+          <button
+            onClick={() => setBasemapMenuOpen((v) => !v)}
+            aria-label="Choisir le fond de carte"
+            aria-haspopup="true"
+            aria-expanded={basemapMenuOpen}
+            className="flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-lg backdrop-blur hover:bg-white dark:bg-slate-900/95 dark:text-slate-300"
+          >
+            <CurrentIcon size={13} aria-hidden="true" /> {BASEMAPS[basemap].label}
+          </button>
+          {basemapMenuOpen && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              {(Object.keys(BASEMAPS) as (keyof typeof BASEMAPS)[]).map((key) => {
+                const B = BASEMAPS[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => changeBasemap(key)}
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-medium ${
+                      key === basemap ? "text-emerald-600" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <B.icon size={13} className="shrink-0" aria-hidden="true" />
+                    <span className="flex-1">{B.label}</span>
+                    {key === basemap && <Check size={13} aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {tools && (
+          <div className="flex overflow-hidden rounded-lg bg-white/95 shadow-lg backdrop-blur dark:bg-slate-900/95">
+            <button
+              onClick={() => selectTool("measure")}
+              aria-pressed={activeTool === "measure"}
+              aria-label="Mesurer une distance"
+              title="Mesurer une distance"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium ${
+                activeTool === "measure" ? "bg-amber-500 text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Ruler size={13} aria-hidden="true" /> Mesurer
+            </button>
+            <button
+              onClick={() => selectTool("select")}
+              aria-pressed={activeTool === "select"}
+              aria-label="Sélection rectangulaire"
+              title="Sélection rectangulaire"
+              className={`flex items-center gap-1.5 border-l border-slate-100 px-2.5 py-1.5 text-xs font-medium dark:border-slate-800 ${
+                activeTool === "select" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <BoxSelect size={13} aria-hidden="true" /> Sélection
+            </button>
+          </div>
+        )}
+
+        {activeTool === "measure" && (
+          <div className="flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
+            {formatDistance(measureKm)}
+            <button onClick={clearMeasure} aria-label="Effacer la mesure" className="rounded p-0.5 hover:bg-white/20">
+              <Trash2 size={13} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {activeTool === "select" && selectionResults && (
+          <div className="max-h-56 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="mb-1.5 flex items-center justify-between px-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{selectionResults.length} sélectionné(s)</span>
+              <button onClick={() => setSelectionResults(null)} aria-label="Fermer la sélection" className="rounded p-0.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <X size={13} aria-hidden="true" />
+              </button>
+            </div>
+            {selectionResults.length === 0 ? (
+              <p className="px-1 py-2 text-xs text-slate-400">Aucun point dans la zone dessinée. Cliquez-glissez sur la carte.</p>
+            ) : (
+              <ul className="space-y-0.5">
+                {selectionResults.map((r) => (
+                  <li key={r.id}>
+                    {r.href ? (
+                      <a href={r.href} className="block truncate rounded px-1.5 py-1 text-xs text-slate-600 hover:bg-slate-50 hover:text-emerald-600 dark:text-slate-300 dark:hover:bg-slate-800">
+                        {r.title}
+                      </a>
+                    ) : (
+                      <span className="block truncate px-1.5 py-1 text-xs text-slate-600 dark:text-slate-300">{r.title}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
@@ -362,10 +611,11 @@ export default function MapView({
                 <button
                   key={entry.id}
                   onClick={() => toggleSector(entry.color)}
+                  aria-pressed={!isHidden}
                   className={`flex items-center gap-1.5 rounded px-1 py-0.5 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800 ${isHidden ? "opacity-40" : ""}`}
                   title={isHidden ? "Cliquer pour afficher" : "Cliquer pour masquer"}
                 >
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} aria-hidden="true" />
                   <span className="truncate text-slate-600 dark:text-slate-300">{entry.label}</span>
                 </button>
               );
@@ -377,9 +627,10 @@ export default function MapView({
       {exportable && (
         <button
           onClick={handleExportPng}
+          aria-label="Exporter la carte en image PNG"
           className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow hover:bg-white dark:bg-slate-900/95 dark:text-slate-300"
         >
-          <Download size={13} /> Exporter PNG
+          <Download size={13} aria-hidden="true" /> Exporter PNG
         </button>
       )}
 

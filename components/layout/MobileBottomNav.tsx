@@ -68,16 +68,22 @@ export default function MobileBottomNav({ role, profile }: { role: UserRole; pro
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium"
             >
-              <Icon size={20} strokeWidth={active ? 2.4 : 2} className={active ? "text-emerald-600" : "text-slate-400"} />
+              <Icon size={20} strokeWidth={active ? 2.4 : 2} className={active ? "text-emerald-600" : "text-slate-400"} aria-hidden="true" />
               <span className={`max-w-full truncate ${active ? "text-emerald-600" : "text-slate-400"}`}>{item.label}</span>
             </Link>
           );
         })}
         {needsMore && (
-          <button onClick={() => setOpen(true)} className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium">
-            <MoreHorizontal size={20} className="text-slate-400" />
+          <button
+            onClick={() => setOpen(true)}
+            aria-haspopup="true"
+            aria-expanded={open}
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium"
+          >
+            <MoreHorizontal size={20} className="text-slate-400" aria-hidden="true" />
             <span className="text-slate-400">Plus</span>
           </button>
         )}
@@ -87,6 +93,9 @@ export default function MobileBottomNav({ role, profile }: { role: UserRole; pro
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navigation"
             className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-2xl dark:bg-slate-900"
             style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
           >
@@ -95,8 +104,8 @@ export default function MobileBottomNav({ role, profile }: { role: UserRole; pro
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{profile.full_name}</p>
                 <p className="text-xs text-slate-400">{ROLE_LABELS[profile.role]}</p>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X size={18} />
+              <button onClick={() => setOpen(false)} aria-label="Fermer le menu" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-2">

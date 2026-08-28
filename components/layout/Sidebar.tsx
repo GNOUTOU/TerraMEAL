@@ -81,6 +81,8 @@ export default function Sidebar({ role }: { role: UserRole }) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
+              aria-label={collapsed ? item.label : undefined}
+              aria-current={active ? "page" : undefined}
               className={`group relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150 ${
                 collapsed ? "justify-center px-0" : "px-3"
               } ${
@@ -89,8 +91,8 @@ export default function Sidebar({ role }: { role: UserRole }) {
                   : "text-slate-300/80 hover:bg-white/5 hover:text-white"
               }`}
             >
-              {active && <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[#17A398]" />}
-              <Icon size={18} strokeWidth={active ? 2.25 : 2} className="shrink-0" />
+              {active && <span aria-hidden="true" className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[#17A398]" />}
+              <Icon size={18} strokeWidth={active ? 2.25 : 2} className="shrink-0" aria-hidden="true" />
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
@@ -100,11 +102,13 @@ export default function Sidebar({ role }: { role: UserRole }) {
       <button
         onClick={toggle}
         title={collapsed ? "Déplier le menu" : "Réduire le menu"}
+        aria-label={collapsed ? "Déplier le menu" : "Réduire le menu"}
+        aria-pressed={collapsed}
         className={`flex items-center gap-2 border-t border-white/10 px-3 py-3 text-xs font-medium text-slate-300/70 transition hover:bg-white/5 hover:text-white ${
           collapsed ? "justify-center" : ""
         }`}
       >
-        {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+        {collapsed ? <ChevronsRight size={16} aria-hidden="true" /> : <ChevronsLeft size={16} aria-hidden="true" />}
         {!collapsed && "Réduire"}
       </button>
       {!collapsed && <div className="border-t border-white/10 p-3 text-[11px] text-slate-400/70">TerraMEAL — v0.1 (MVP)</div>}

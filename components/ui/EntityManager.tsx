@@ -153,11 +153,11 @@ export default function EntityManager<T extends object>({
                 {canWrite && (
                   <td className="px-4 py-2.5 text-right">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => openEdit(row)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                        <Pencil size={14} />
+                      <button onClick={() => openEdit(row)} aria-label={`Modifier — ${title}`} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <Pencil size={14} aria-hidden="true" />
                       </button>
-                      <button onClick={() => handleDelete(row)} className="rounded p-1.5 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
-                        <Trash2 size={14} />
+                      <button onClick={() => handleDelete(row)} aria-label={`Supprimer — ${title}`} className="rounded p-1.5 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40">
+                        <Trash2 size={14} aria-hidden="true" />
                       </button>
                     </div>
                   </td>

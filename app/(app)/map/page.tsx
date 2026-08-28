@@ -43,8 +43,8 @@ export default async function MapPage({
       />
 
       <div className="relative flex-1" style={{ minHeight: 500 }}>
-        <MapView points={points} polygons={polygons} legend={legend} exportable />
-        <p className="pointer-events-none absolute right-3 top-16 z-10 rounded bg-white/90 px-2 py-1 text-[10px] text-slate-400 dark:bg-slate-900/90">
+        <MapView points={points} polygons={polygons} legend={legend} exportable tools />
+        <p className="pointer-events-none absolute right-3 top-32 z-10 rounded bg-white/90 px-2 py-1 text-[10px] text-slate-400 dark:bg-slate-900/90">
           {points.features.length} réalisation(s) affichée(s)
         </p>
       </div>

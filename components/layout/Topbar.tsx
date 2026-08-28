@@ -54,8 +54,10 @@ export default function Topbar({ profile }: { profile: Profile }) {
   return (
     <header className="flex h-16 min-w-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:px-4 md:px-6 dark:border-slate-800 dark:bg-slate-900/95">
       <div ref={searchRef} className="relative min-w-0 flex-1 sm:max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
         <input
+          type="search"
+          aria-label="Recherche globale"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => visibleResults.length > 0 && setShowResults(true)}
@@ -88,11 +90,14 @@ export default function Topbar({ profile }: { profile: Profile }) {
         <div className="relative">
           <button
             onClick={() => setShowNotifs((v) => !v)}
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lue(s)` : "Notifications"}
+            aria-haspopup="true"
+            aria-expanded={showNotifs}
             className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            <Bell size={18} />
+            <Bell size={18} aria-hidden="true" />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+              <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -138,6 +143,9 @@ export default function Topbar({ profile }: { profile: Profile }) {
         <div className="relative">
           <button
             onClick={() => setShowUserMenu((v) => !v)}
+            aria-label={`Menu du compte — ${profile.full_name}`}
+            aria-haspopup="true"
+            aria-expanded={showUserMenu}
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
