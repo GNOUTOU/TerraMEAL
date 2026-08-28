@@ -12,6 +12,7 @@ import {
   UploadCloud,
   ShieldCheck,
   HandCoins,
+  Handshake,
   Settings,
   MoreHorizontal,
   X,
@@ -33,6 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
   UploadCloud,
   ShieldCheck,
   HandCoins,
+  Handshake,
   Settings,
 };
 

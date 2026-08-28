@@ -93,6 +93,65 @@ export async function getIndicatorPerformance() {
   }[]) ?? [];
 }
 
+// Répartition du portefeuille par statut — vue exécutive (Direction). Les tables sont lues avec
+// la session de l'utilisateur courant (RLS), donc un rôle scoping (ex: program_manager) obtient
+// automatiquement une répartition limitée à son propre périmètre.
+export async function getPortfolioByStatus() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("projects").select("status");
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
+  return Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
+}
+
+// Classement des projets par bénéficiaires atteints — vue exécutive.
+export async function getTopProjects(limit = 6) {
+  const supabase = await createClient();
+  const { data: projects } = await supabase.from("projects").select("id, name, status").order("name");
+  if (!projects || projects.length === 0) return [];
+
+  const { data: interventions } = await supabase
+    .from("interventions")
+    .select("project_id, beneficiaries_total")
+    .in("validation_status", ["validated", "published"]);
+
+  const totals = new Map<string, number>();
+  for (const row of interventions ?? []) {
+    totals.set(row.project_id, (totals.get(row.project_id) ?? 0) + (row.beneficiaries_total ?? 0));
+  }
+
+  return projects
+    .map((p) => ({ id: p.id, name: p.name, status: p.status, beneficiaries: totals.get(p.id) ?? 0 }))
+    .sort((a, b) => b.beneficiaries - a.beneficiaries)
+    .slice(0, limit);
+}
+
+// Projets accessibles à l'utilisateur courant (RLS) avec un mini-résumé — vue Responsable
+// Programme ("Vos projets").
+export async function getMyProjectsSummary() {
+  const supabase = await createClient();
+  const { data: projects } = await supabase.from("projects").select("*").order("name");
+  if (!projects || projects.length === 0) return [];
+
+  const { data: interventions } = await supabase.from("interventions").select("project_id, beneficiaries_total, validation_status");
+
+  const stats = new Map<string, { count: number; beneficiaries: number }>();
+  for (const row of interventions ?? []) {
+    const s = stats.get(row.project_id) ?? { count: 0, beneficiaries: 0 };
+    if (row.validation_status === "validated" || row.validation_status === "published") {
+      s.count += 1;
+      s.beneficiaries += row.beneficiaries_total ?? 0;
+    }
+    stats.set(row.project_id, s);
+  }
+
+  return projects.map((p) => ({
+    ...p,
+    interventions_count: stats.get(p.id)?.count ?? 0,
+    beneficiaries: stats.get(p.id)?.beneficiaries ?? 0,
+  }));
+}
+
 export async function getQualityAlertsSummary() {
   const supabase = await createClient();
   const [{ count: openCount }, { count: blockingCount }, { data: byType }] = await Promise.all([

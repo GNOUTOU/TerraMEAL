@@ -7,32 +7,52 @@ import MapView from "@/components/map/MapView";
 import ExportMenu from "@/components/ui/ExportMenu";
 import { interventionsToFeatureCollection } from "@/lib/geo";
 import Link from "next/link";
-import DonorSelect from "./DonorSelect";
+import PartnerOrgSelect from "./PartnerOrgSelect";
 import SectionTitle from "@/components/ui/SectionTitle";
-import { HandCoins, FolderKanban, MapPinned, Users, Wallet, Map, Gauge } from "lucide-react";
+import { HandCoins, Handshake, FolderKanban, MapPinned, Users, Wallet, Map, Gauge, Download } from "lucide-react";
 
-export default async function DonorViewPage({
+export default async function DonorPartnerViewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ donor?: string }>;
+  searchParams: Promise<{ donor?: string; partner?: string }>;
 }) {
   const { profile } = await requireUser();
   const sp = await searchParams;
   const supabase = await createClient();
 
-  let donorId = profile.role === "donor" ? profile.donor_id : sp.donor;
+  const isPartnerRole = profile.role === "partner";
+  const scopeType: "donor" | "partner" = isPartnerRole ? "partner" : profile.role === "donor" ? "donor" : sp.partner ? "partner" : "donor";
 
-  const { data: donors } =
-    profile.role === "admin" || profile.role === "meal_sig" ? await supabase.from("donors").select("id, name").order("name") : { data: null };
+  let orgId = isPartnerRole ? profile.partner_id : profile.role === "donor" ? profile.donor_id : scopeType === "partner" ? sp.partner : sp.donor;
 
-  if (!donorId && donors && donors.length > 0) donorId = donors[0].id;
+  const canPreview = profile.role === "admin" || profile.role === "meal_sig";
+  const { data: donorList } = canPreview ? await supabase.from("donors").select("id, name").order("name") : { data: null };
+  const { data: partnerList } = canPreview ? await supabase.from("partners").select("id, name").order("name") : { data: null };
 
-  if (!donorId) {
-    return <EmptyState icon={HandCoins} title="Aucun bailleur associé" description="Ce compte n'est associé à aucun bailleur. Contactez un administrateur." />;
+  if (!orgId && canPreview) {
+    const list = scopeType === "partner" ? partnerList : donorList;
+    if (list && list.length > 0) orgId = list[0].id;
   }
 
-  const { data: donor } = await supabase.from("donors").select("*").eq("id", donorId).single();
-  const { data: projectLinks } = await supabase.from("project_donors").select("project_id, amount, currency, projects(*)").eq("donor_id", donorId);
+  const icon = scopeType === "partner" ? Handshake : HandCoins;
+  const label = scopeType === "partner" ? "Partenaire" : "Bailleur";
+
+  if (!orgId) {
+    return (
+      <EmptyState
+        icon={icon}
+        title={`Aucun ${label.toLowerCase()} associé`}
+        description={`Ce compte n'est associé à aucun ${label.toLowerCase()}. Contactez un administrateur.`}
+      />
+    );
+  }
+
+  const { data: org } = await supabase.from(scopeType === "partner" ? "partners" : "donors").select("*").eq("id", orgId).single();
+
+  const { data: projectLinks } =
+    scopeType === "partner"
+      ? await supabase.from("project_partners").select("project_id, role, projects(*)").eq("partner_id", orgId)
+      : await supabase.from("project_donors").select("project_id, amount, currency, projects(*)").eq("donor_id", orgId);
   const projectIds = (projectLinks ?? []).map((l) => l.project_id);
 
   const { data: interventions } =
@@ -47,31 +67,57 @@ export default async function DonorViewPage({
 
   const beneficiariesTotal = (interventions ?? []).reduce((s, i) => s + (i.beneficiaries_total ?? 0), 0);
   const features = interventionsToFeatureCollection((interventions ?? []) as never[]);
+  const amountTotal = scopeType === "donor" ? (projectLinks ?? []).reduce((s, l) => s + ((l as { amount?: number }).amount ?? 0), 0) : null;
 
   return (
     <div>
       <PageHeader
-        title={`Vue Bailleur — ${donor?.name ?? ""}`}
-        description="Portefeuille de projets financés, réalisations et indicateurs."
-        icon={HandCoins}
+        title={`Vue ${label} — ${org?.name ?? ""}`}
+        description={`Portefeuille de projets ${scopeType === "partner" ? "en mise en œuvre" : "financés"}, réalisations et indicateurs.`}
+        icon={icon}
         actions={
-          <div className="flex items-center gap-2">
-            {donors && donors.length > 1 && <DonorSelect donors={donors} current={donorId} />}
-            <ExportMenu baseUrl="/api/export/interventions" formats={[{ format: "csv", label: "CSV" }, { format: "geojson", label: "GeoJSON" }]} />
+          <div className="flex flex-wrap items-center gap-2">
+            {canPreview && scopeType === "donor" && donorList && donorList.length > 1 && (
+              <PartnerOrgSelect items={donorList} current={orgId} paramName="donor" />
+            )}
+            {canPreview && scopeType === "partner" && partnerList && partnerList.length > 1 && (
+              <PartnerOrgSelect items={partnerList} current={orgId} paramName="partner" />
+            )}
           </div>
         }
       />
 
+      {/* Export mis en avant : c'est l'action principale pour ce rôle (reporting vers ses propres
+          parties prenantes), pas une fonction secondaire noyée dans un menu. */}
+      <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+            <Download size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Exporter vos données</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Uniquement les données validées et publiées vous concernant.</p>
+          </div>
+        </div>
+        <ExportMenu
+          baseUrl="/api/export/interventions"
+          formats={[
+            { format: "csv", label: "CSV" },
+            { format: "excel", label: "Excel" },
+            { format: "geojson", label: "GeoJSON" },
+          ]}
+        />
+      </Card>
+
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard icon={FolderKanban} label="Projets financés" value={projectLinks?.length ?? 0} />
+        <KpiCard icon={FolderKanban} label={scopeType === "partner" ? "Projets liés" : "Projets financés"} value={projectLinks?.length ?? 0} />
         <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventions?.length ?? 0} />
         <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
-        <KpiCard
-          icon={Wallet}
-          color="amber"
-          label="Montant engagé"
-          value={(projectLinks ?? []).reduce((s, l) => s + (l.amount ?? 0), 0).toLocaleString("fr-FR")}
-        />
+        {scopeType === "donor" ? (
+          <KpiCard icon={Wallet} color="amber" label="Montant engagé" value={(amountTotal ?? 0).toLocaleString("fr-FR")} />
+        ) : (
+          <KpiCard icon={Gauge} color="amber" label="Indicateurs suivis" value={indicatorResults?.length ?? 0} />
+        )}
       </div>
 
       <Card className="mb-4">
@@ -83,7 +129,7 @@ export default async function DonorViewPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <SectionTitle icon={FolderKanban} className="mb-3">Projets financés</SectionTitle>
+          <SectionTitle icon={FolderKanban} className="mb-3">{scopeType === "partner" ? "Projets liés" : "Projets financés"}</SectionTitle>
           <div className="space-y-2">
             {(projectLinks ?? []).map((l) => {
               const p = (l as unknown as { projects: { id: string; name: string; code: string; status: string } }).projects;
@@ -94,7 +140,7 @@ export default async function DonorViewPage({
                 </Link>
               );
             })}
-            {(projectLinks?.length ?? 0) === 0 && <p className="text-sm text-slate-400">Aucun projet financé.</p>}
+            {(projectLinks?.length ?? 0) === 0 && <p className="text-sm text-slate-400">Aucun projet.</p>}
           </div>
         </Card>
 

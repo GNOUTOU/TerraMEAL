@@ -16,5 +16,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/import", label: "Import / Synchronisation", icon: "UploadCloud", roles: ["admin", "meal_sig"] },
   { href: "/quality", label: "Qualité des données", icon: "ShieldCheck", roles: ["admin", "meal_sig"] },
   { href: "/donor", label: "Vue Bailleur", icon: "HandCoins", roles: ["admin", "meal_sig", "donor"] },
+  { href: "/donor", label: "Vue Partenaire", icon: "Handshake", roles: ["partner"] },
   { href: "/admin", label: "Administration", icon: "Settings", roles: ["admin"] },
 ];

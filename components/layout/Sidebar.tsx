@@ -13,6 +13,7 @@ import {
   UploadCloud,
   ShieldCheck,
   HandCoins,
+  Handshake,
   Settings,
   ChevronsLeft,
   ChevronsRight,
@@ -30,6 +31,7 @@ const ICONS: Record<string, LucideIcon> = {
   UploadCloud,
   ShieldCheck,
   HandCoins,
+  Handshake,
   Settings,
 };
 
