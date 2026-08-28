@@ -43,7 +43,7 @@ export default async function MapPage({
 
       <div className="relative flex-1" style={{ minHeight: 500 }}>
         <MapView points={points} polygons={polygons} exportable />
-        <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded-lg bg-white/95 p-3 text-xs shadow-lg backdrop-blur dark:bg-slate-900/95">
+        <div className="pointer-events-none absolute bottom-4 left-3 z-10 max-w-[calc(100vw-5.5rem)] rounded-lg bg-white/95 p-3 text-xs shadow-lg backdrop-blur sm:left-4 sm:max-w-[calc(100vw-8rem)] dark:bg-slate-900/95">
           <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-300">
             <MapPin size={13} /> Légende — secteurs
           </p>

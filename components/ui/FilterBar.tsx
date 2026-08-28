@@ -43,7 +43,7 @@ export default function FilterBar({ filters }: { filters: FilterDef[] }) {
           key={f.key}
           value={searchParams.get(f.key) ?? ""}
           onChange={(e) => setFilter(f.key, e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+          className="max-w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
         >
           <option value="">{f.label}</option>
           {f.options.map((o) => (

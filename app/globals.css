@@ -27,6 +27,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Garde-fou mobile-first : aucun élément ne doit provoquer de scroll horizontal de page.
+   (svg volontairement exclu : les icônes lucide-react fixent width/height explicitement). */
+img,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 ::selection {

@@ -52,15 +52,15 @@ export default function Topbar({ profile }: { profile: Profile }) {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur-sm md:px-6 dark:border-slate-800 dark:bg-slate-900/95">
-      <div ref={searchRef} className="relative flex-1 max-w-md">
+    <header className="flex h-16 min-w-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:px-4 md:px-6 dark:border-slate-800 dark:bg-slate-900/95">
+      <div ref={searchRef} className="relative min-w-0 flex-1 sm:max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => visibleResults.length > 0 && setShowResults(true)}
-          placeholder="Rechercher un projet, une localité, un partenaire..."
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:focus:bg-slate-800"
+          placeholder="Rechercher un projet, une localité..."
+          className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:focus:bg-slate-800"
         />
         {showResults && visibleResults.length > 0 && (
           <div className="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
@@ -98,7 +98,7 @@ export default function Topbar({ profile }: { profile: Profile }) {
             )}
           </button>
           {showNotifs && (
-            <div className="absolute right-0 z-30 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div className="fixed inset-x-3 top-16 z-30 mt-0 rounded-lg border border-slate-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 dark:border-slate-800">
                 <span className="text-sm font-medium">Notifications</span>
                 {unreadCount > 0 && (
@@ -149,7 +149,7 @@ export default function Topbar({ profile }: { profile: Profile }) {
             </div>
           </button>
           {showUserMenu && (
-            <div className="absolute right-0 z-30 mt-2 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div className="absolute right-0 z-30 mt-2 w-48 max-w-[calc(100vw-1.5rem)] rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
               <Link href="/profile" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
                 <UserIcon size={15} /> Mon profil
               </Link>

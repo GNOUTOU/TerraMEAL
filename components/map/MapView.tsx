@@ -14,17 +14,32 @@ export interface MapFeatureProperties {
   href?: string;
 }
 
-const OSM_STYLE: StyleSpecification = {
+// Fond satellite (imagerie Esri World Imagery) + calque de référence (frontières, routes,
+// toponymes) superposé pour rester lisible — pas de clé d'API requise.
+const SATELLITE_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    osm: {
+    satellite: {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
+      maxzoom: 19,
+      attribution: "Esri, Maxar, Earthstar Geographics",
+    },
+    "satellite-labels": {
+      type: "raster",
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "Esri",
     },
   },
-  layers: [{ id: "osm", type: "raster", source: "osm" }],
+  layers: [
+    { id: "satellite", type: "raster", source: "satellite" },
+    { id: "satellite-labels", type: "raster", source: "satellite-labels" },
+  ],
 };
 
 export default function MapView({
@@ -55,7 +70,7 @@ export default function MapView({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: OSM_STYLE,
+      style: SATELLITE_STYLE,
       center,
       zoom,
     });
