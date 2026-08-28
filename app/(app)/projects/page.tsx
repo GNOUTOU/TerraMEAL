@@ -6,8 +6,11 @@ import FilterBar from "@/components/ui/FilterBar";
 import { ProjectStatusBadge } from "@/components/ui/Badge";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import ExportMenu from "@/components/ui/ExportMenu";
+import Pagination from "@/components/ui/Pagination";
 import { FolderKanban, Plus } from "lucide-react";
 import type { Project } from "@/lib/types";
+
+const PAGE_SIZE = 20;
 
 export default async function ProjectsPage({
   searchParams,
@@ -17,8 +20,9 @@ export default async function ProjectsPage({
   const { profile } = await requireUser();
   const sp = await searchParams;
   const supabase = await createClient();
+  const currentPage = Math.max(1, Number(sp.page) || 1);
 
-  let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
+  let query = supabase.from("projects").select("*", { count: "exact" }).order("created_at", { ascending: false });
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.donor) {
     const { data: linked } = await supabase.from("project_donors").select("project_id").eq("donor_id", sp.donor);
@@ -29,8 +33,10 @@ export default async function ProjectsPage({
     query = query.in("id", (linked ?? []).map((l) => l.project_id).concat("00000000-0000-0000-0000-000000000000"));
   }
   if (sp.q) query = query.or(`name.ilike.%${sp.q}%,code.ilike.%${sp.q}%`);
+  query = query.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
-  const [{ data: projects }, options] = await Promise.all([query, getFilterOptions()]);
+  const [{ data: projects, count }, options] = await Promise.all([query, getFilterOptions()]);
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
     <div>
@@ -106,6 +112,15 @@ export default async function ProjectsPage({
           </table>
         </div>
       )}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={count ?? 0}
+        pageSize={PAGE_SIZE}
+        basePath="/projects"
+        searchParams={sp}
+      />
     </div>
   );
 }
