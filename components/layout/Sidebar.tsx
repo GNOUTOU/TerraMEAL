@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import PulsingLogo from "@/components/ui/PulsingLogo";
 import {
   LayoutDashboard,
   Map,
@@ -66,7 +66,7 @@ export default function Sidebar({ role }: { role: UserRole }) {
       } ${mounted ? "" : "duration-0"}`}
     >
       <div className={`flex h-16 items-center gap-2.5 border-b border-white/10 ${collapsed ? "justify-center px-2" : "px-5"}`}>
-        <Image src="/terrameal-mark.svg" alt="TerraMEAL" width={30} height={30} className="shrink-0 drop-shadow" />
+        <PulsingLogo size={30} />
         {!collapsed && <span className="truncate text-lg font-semibold tracking-tight text-white">TerraMEAL</span>}
       </div>
 

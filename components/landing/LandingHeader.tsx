@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Menu, X, ArrowRight } from "lucide-react";
+import PulsingLogo from "@/components/ui/PulsingLogo";
 
 const NAV_LINKS = [
   { href: "#plateforme", label: "Plateforme" },
@@ -35,7 +35,7 @@ export default function LandingHeader() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/terrameal-mark.svg" alt="TerraMEAL" width={30} height={30} priority />
+          <PulsingLogo size={30} />
           <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">TerraMEAL</span>
         </Link>
 
