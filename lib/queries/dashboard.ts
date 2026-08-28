@@ -26,7 +26,7 @@ export async function getFilterOptions() {
   const supabase = await createClient();
   const [{ data: projects }, { data: sectors }, { data: donors }, { data: zones }] = await Promise.all([
     supabase.from("projects").select("id, code, name").order("name"),
-    supabase.from("sectors").select("id, name").eq("active", true).order("name"),
+    supabase.from("sectors").select("id, name, color").eq("active", true).order("name"),
     supabase.from("donors").select("id, name").eq("active", true).order("name"),
     supabase.from("admin_zones").select("id, name, level").in("level", ["region", "province", "commune"]).order("name"),
   ]);

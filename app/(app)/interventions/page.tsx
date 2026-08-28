@@ -58,6 +58,7 @@ export default async function InterventionsPage({
 
   const [{ data: mapRows }, { data: rows, count }, options] = await Promise.all([mapQueryFinal, tableQueryFinal, getFilterOptions()]);
   const features = interventionsToFeatureCollection((mapRows ?? []) as never[]);
+  const legend = options.sectors.map((s) => ({ id: s.id, label: s.name, color: (s as { color?: string }).color ?? "#2563eb" }));
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const cleanParams = Object.fromEntries(Object.entries(sp).filter(([, v]) => v !== undefined)) as Record<string, string>;
 
@@ -106,7 +107,7 @@ export default async function InterventionsPage({
       />
 
       <div className="mb-4" style={{ height: 360 }}>
-        <MapView points={features} />
+        <MapView points={features} legend={legend} />
       </div>
 
       {!rows || rows.length === 0 ? (

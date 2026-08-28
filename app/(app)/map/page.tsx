@@ -4,7 +4,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import { interventionsToFeatureCollection, zonesToFeatureCollection } from "@/lib/geo";
 import MapView from "@/components/map/MapView";
-import { Map, MapPin } from "lucide-react";
+import { Map } from "lucide-react";
 
 export default async function MapPage({
   searchParams,
@@ -28,6 +28,7 @@ export default async function MapPage({
 
   const points = interventionsToFeatureCollection((interventions ?? []) as never[]);
   const polygons = zonesToFeatureCollection((zones ?? []) as never[]);
+  const legend = (sectors ?? []).map((s) => ({ id: s.id, label: s.name, color: s.color }));
 
   return (
     <div className="flex h-full flex-col">
@@ -42,21 +43,8 @@ export default async function MapPage({
       />
 
       <div className="relative flex-1" style={{ minHeight: 500 }}>
-        <MapView points={points} polygons={polygons} exportable />
-        <div className="pointer-events-none absolute bottom-4 left-3 z-10 max-w-[calc(100vw-5.5rem)] rounded-lg bg-white/95 p-3 text-xs shadow-lg backdrop-blur sm:left-4 sm:max-w-[calc(100vw-8rem)] dark:bg-slate-900/95">
-          <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-300">
-            <MapPin size={13} /> Légende — secteurs
-          </p>
-          <div className="flex flex-col gap-1">
-            {(sectors ?? []).map((s) => (
-              <div key={s.id} className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                <span className="text-slate-500">{s.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="pointer-events-none absolute right-3 top-3 z-10 rounded bg-white/90 px-2 py-1 text-[10px] text-slate-400 dark:bg-slate-900/90">
+        <MapView points={points} polygons={polygons} legend={legend} exportable />
+        <p className="pointer-events-none absolute right-3 top-16 z-10 rounded bg-white/90 px-2 py-1 text-[10px] text-slate-400 dark:bg-slate-900/90">
           {points.features.length} réalisation(s) affichée(s)
         </p>
       </div>
