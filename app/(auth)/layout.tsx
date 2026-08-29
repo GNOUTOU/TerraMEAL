@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative z-10 w-full max-w-md">
           <div className="mb-6 flex justify-center">
-            <div className="flex items-center gap-3 rounded-xl bg-white/95 px-6 py-4 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center gap-3 overflow-hidden rounded-xl bg-white/95 px-6 py-4 shadow-lg backdrop-blur-sm">
               <PulsingLogo size={48} />
               <div>
                 <p className="text-2xl font-bold tracking-tight text-[#0B4F6C]">
@@ -72,7 +72,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen flex-1 items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
-          <div className="flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-3 overflow-hidden rounded-xl bg-white px-6 py-4 shadow-sm dark:shadow-none">
             <PulsingLogo size={48} />
             <div>
               <p className="text-2xl font-bold tracking-tight text-[#0B4F6C]">
