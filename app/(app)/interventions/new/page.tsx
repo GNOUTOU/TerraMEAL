@@ -13,10 +13,11 @@ export default async function NewInterventionPage({
   const { project } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: projects }, { data: sectors }, { data: zones }] = await Promise.all([
+  const [{ data: projects }, { data: sectors }, { data: zones }, { data: partners }] = await Promise.all([
     supabase.from("projects").select("id, name").order("name"),
     supabase.from("sectors").select("id, name").eq("active", true).order("name"),
     supabase.from("admin_zones").select("id, name").order("name"),
+    supabase.from("partners").select("id, name").eq("active", true).order("name"),
   ]);
 
   return (
@@ -27,6 +28,7 @@ export default async function NewInterventionPage({
           projects={projects ?? []}
           sectors={sectors ?? []}
           zones={zones ?? []}
+          partners={partners ?? []}
           defaultProjectId={project}
         />
       </Card>

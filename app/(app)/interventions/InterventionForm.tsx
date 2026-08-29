@@ -17,6 +17,7 @@ export default function InterventionForm({
   projects,
   sectors,
   zones,
+  partners = [],
   defaultProjectId,
 }: {
   intervention?: Intervention;
@@ -25,6 +26,7 @@ export default function InterventionForm({
   projects: RefItem[];
   sectors: RefItem[];
   zones: RefItem[];
+  partners?: RefItem[];
   defaultProjectId?: string;
 }) {
   const router = useRouter();
@@ -67,9 +69,10 @@ export default function InterventionForm({
       </div>
       <Textarea label="Description" name="description" defaultValue={intervention?.description ?? ""} />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Select label="Secteur" name="sector_id" defaultValue={intervention?.sector_id ?? ""} options={sectors} />
         <Select label="Zone administrative" name="admin_zone_id" defaultValue={intervention?.admin_zone_id ?? ""} options={zones} />
+        <Select label="Partenaire de mise en œuvre" name="implementing_partner_id" defaultValue={intervention?.implementing_partner_id ?? ""} options={partners} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">

@@ -9,6 +9,7 @@ import ExportMenu from "@/components/ui/ExportMenu";
 import Pagination from "@/components/ui/Pagination";
 import { FolderKanban, Plus } from "lucide-react";
 import type { Project } from "@/lib/types";
+import { yearOptions } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -32,6 +33,11 @@ export default async function ProjectsPage({
     const { data: linked } = await supabase.from("project_sectors").select("project_id").eq("sector_id", sp.sector);
     query = query.in("id", (linked ?? []).map((l) => l.project_id).concat("00000000-0000-0000-0000-000000000000"));
   }
+  if (sp.partner) {
+    const { data: linked } = await supabase.from("project_partners").select("project_id").eq("partner_id", sp.partner);
+    query = query.in("id", (linked ?? []).map((l) => l.project_id).concat("00000000-0000-0000-0000-000000000000"));
+  }
+  if (sp.year) query = query.eq("year", Number(sp.year));
   if (sp.q) query = query.or(`name.ilike.%${sp.q}%,code.ilike.%${sp.q}%`);
   query = query.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
@@ -71,6 +77,8 @@ export default async function ProjectsPage({
           },
           { key: "sector", label: "Tous les secteurs", options: options.sectors.map((s) => ({ value: s.id, label: s.name })) },
           { key: "donor", label: "Tous les bailleurs", options: options.donors.map((d) => ({ value: d.id, label: d.name })) },
+          { key: "partner", label: "Tous les partenaires", options: options.partners.map((p) => ({ value: p.id, label: p.name })) },
+          { key: "year", label: "Toutes les années", options: yearOptions() },
         ]}
       />
 

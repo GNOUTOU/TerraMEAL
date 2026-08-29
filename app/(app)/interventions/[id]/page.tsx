@@ -24,7 +24,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
   const { data: intervention } = await supabase.from("interventions_geo").select("*").eq("id", id).single();
   if (!intervention) notFound();
 
-  const [{ data: infra }, { data: activity }, { data: beneficiaries }, { data: anomalies }, { data: documents }, { data: projects }, { data: sectors }, { data: zones }] =
+  const [{ data: infra }, { data: activity }, { data: beneficiaries }, { data: anomalies }, { data: documents }, { data: projects }, { data: sectors }, { data: zones }, { data: partners }] =
     await Promise.all([
       supabase.from("infrastructures").select("*").eq("intervention_id", id).maybeSingle(),
       supabase.from("activities").select("*").eq("intervention_id", id).maybeSingle(),
@@ -34,6 +34,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
       supabase.from("projects").select("id, name").order("name"),
       supabase.from("sectors").select("id, name").eq("active", true).order("name"),
       supabase.from("admin_zones").select("id, name").order("name"),
+      supabase.from("partners").select("id, name").eq("active", true).order("name"),
     ]);
 
   const canWrite = canWriteOperationalData(profile.role);
@@ -57,6 +58,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
               <Info label="Projet" value={<Link href={`/projects/${intervention.project_id}`} className="text-emerald-600 hover:underline">{intervention.project_name}</Link>} />
               <Info label="Secteur" value={intervention.sector_name ?? "—"} />
               <Info label="Zone" value={intervention.admin_zone_name ?? "—"} />
+              <Info label="Partenaire de mise en œuvre" value={intervention.implementing_partner_name ?? "—"} />
               <Info label="Date" value={intervention.date ?? "—"} />
               <Info label="Statut opérationnel" value={intervention.status} />
               <Info label="Bénéficiaires" value={(intervention.beneficiaries_total ?? beneficiariesTotal).toLocaleString("fr-FR")} />
@@ -143,6 +145,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
                 projects={projects ?? []}
                 sectors={sectors ?? []}
                 zones={zones ?? []}
+                partners={partners ?? []}
               />
             </Card>
           )}

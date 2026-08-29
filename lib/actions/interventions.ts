@@ -15,6 +15,7 @@ interface InterventionInput {
   name: string;
   description: string | null;
   admin_zone_id: string | null;
+  implementing_partner_id: string | null;
   date: string | null;
   status: string;
   beneficiaries_total: number | null;
@@ -44,6 +45,7 @@ function parseInput(formData: FormData): InterventionInput {
     name: String(formData.get("name") || "").trim(),
     description: str(formData.get("description")),
     admin_zone_id: str(formData.get("admin_zone_id")),
+    implementing_partner_id: str(formData.get("implementing_partner_id")),
     date: str(formData.get("date")),
     status: String(formData.get("status") || "planifie"),
     beneficiaries_total: num(formData.get("beneficiaries_total")),
@@ -78,6 +80,7 @@ export async function createIntervention(formData: FormData) {
       name: input.name,
       description: input.description,
       admin_zone_id: input.admin_zone_id,
+      implementing_partner_id: input.implementing_partner_id,
       geom,
       date: input.date,
       status: input.status,
@@ -135,6 +138,7 @@ export async function updateIntervention(id: string, formData: FormData) {
       name: input.name,
       description: input.description,
       admin_zone_id: input.admin_zone_id,
+      implementing_partner_id: input.implementing_partner_id,
       geom,
       date: input.date,
       status: input.status,

@@ -58,6 +58,7 @@ export default function MobileBottomNav({ role, profile }: { role: UserRole; pro
   return (
     <>
       <nav
+        id="mobile-bottom-nav"
         className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-slate-200 bg-white/95 backdrop-blur-md md:hidden dark:border-slate-800 dark:bg-slate-900/95"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >

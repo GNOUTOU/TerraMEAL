@@ -18,6 +18,8 @@ interface ProjectInput {
   budget: number | null;
   currency: string | null;
   donor_principal_id: string | null;
+  objectives: string | null;
+  target_groups: string | null;
   sector_ids: string[];
   zone_ids: string[];
   partner_ids: string[];
@@ -41,6 +43,8 @@ function parseInput(formData: FormData): ProjectInput {
     budget: num(formData.get("budget")),
     currency: str(formData.get("currency")) ?? "USD",
     donor_principal_id: str(formData.get("donor_principal_id")),
+    objectives: str(formData.get("objectives")),
+    target_groups: str(formData.get("target_groups")),
     sector_ids: formData.getAll("sector_ids").map(String),
     zone_ids: formData.getAll("zone_ids").map(String),
     partner_ids: formData.getAll("partner_ids").map(String),
@@ -82,6 +86,8 @@ export async function createProject(formData: FormData) {
       budget: input.budget,
       currency: input.currency,
       donor_principal_id: input.donor_principal_id,
+      objectives: input.objectives,
+      target_groups: input.target_groups,
       created_by: userId,
     })
     .select("id")
@@ -125,6 +131,8 @@ export async function updateProject(id: string, formData: FormData) {
       budget: input.budget,
       currency: input.currency,
       donor_principal_id: input.donor_principal_id,
+      objectives: input.objectives,
+      target_groups: input.target_groups,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

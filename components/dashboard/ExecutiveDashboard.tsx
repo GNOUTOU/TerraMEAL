@@ -3,7 +3,7 @@ import { KpiCard, Card } from "@/components/ui/Card";
 import { ProjectStatusBadge } from "@/components/ui/Badge";
 import FilterBar from "@/components/ui/FilterBar";
 import EChart from "@/components/charts/EChart";
-import { FolderKanban, MapPinned, Users, Landmark, TrendingUp, Trophy } from "lucide-react";
+import { FolderKanban, MapPinned, Users, Landmark, TrendingUp, Trophy, MapPin } from "lucide-react";
 import {
   getDashboardKpis,
   getFilterOptions,
@@ -11,6 +11,7 @@ import {
   getInterventionsByStatusAndYear,
   getPortfolioByStatus,
   getTopProjects,
+  getZoneCoverage,
   type DashboardFilters,
 } from "@/lib/queries/dashboard";
 import { PROJECT_STATUS_LABELS } from "@/lib/types";
@@ -26,13 +27,14 @@ const STATUS_COLORS: Record<string, string> = {
 // Vue exécutive (Direction) : lecture large du portefeuille, pas de détail opérationnel
 // (pas d'alertes qualité, pas de workflow) — comparatif et tendances plutôt que gestion.
 export default async function ExecutiveDashboard({ filters }: { filters: DashboardFilters }) {
-  const [kpis, options, bySector, byStatusYear, portfolio, topProjects] = await Promise.all([
+  const [kpis, options, bySector, byStatusYear, portfolio, topProjects, coverage] = await Promise.all([
     getDashboardKpis(filters),
     getFilterOptions(),
     getInterventionsBySector(filters),
     getInterventionsByStatusAndYear(filters),
     getPortfolioByStatus(),
     getTopProjects(6),
+    getZoneCoverage(8),
   ]);
 
   return (
@@ -153,17 +155,45 @@ export default async function ExecutiveDashboard({ filters }: { filters: Dashboa
         </Card>
       </div>
 
-      <Card>
-        <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Portefeuille par statut</h2>
-        <div className="flex flex-wrap gap-2">
-          {portfolio.map((p) => (
-            <div key={p.status} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 dark:border-slate-800">
-              <ProjectStatusBadge status={p.status as never} />
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{p.count}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Portefeuille par statut</h2>
+          <div className="flex flex-wrap gap-2">
+            {portfolio.map((p) => (
+              <div key={p.status} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 dark:border-slate-800">
+                <ProjectStatusBadge status={p.status as never} />
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{p.count}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <MapPin size={16} className="text-slate-400" /> Communes les moins couvertes
+          </h2>
+          {coverage.length === 0 ? (
+            <p className="py-10 text-center text-sm text-slate-400">Aucune donnée</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {coverage.map((z) => (
+                <li key={z.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-700 dark:text-slate-200">{z.name}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      z.count === 0
+                        ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
+                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    {z.count} réalisation(s)
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

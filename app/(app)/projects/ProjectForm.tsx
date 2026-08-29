@@ -93,6 +93,14 @@ export default function ProjectForm({
       </fieldset>
 
       <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+        <legend className="px-1 text-xs font-semibold uppercase text-slate-400">Objectifs &amp; groupes cibles</legend>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextArea label="Objectifs du projet" name="objectives" defaultValue={project?.objectives ?? ""} />
+          <TextArea label="Groupes cibles" name="target_groups" defaultValue={project?.target_groups ?? ""} />
+        </div>
+      </fieldset>
+
+      <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
         <legend className="px-1 text-xs font-semibold uppercase text-slate-400">Programmatique &amp; géographie</legend>
         <CheckboxGroup label="Secteurs" name="sector_ids" options={sectors} defaultValues={selected?.sector_ids} />
         <CheckboxGroup

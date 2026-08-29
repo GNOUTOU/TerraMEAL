@@ -125,3 +125,25 @@ canvas {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ---------- Export PDF (33) via impression navigateur ---------- */
+/* Une page peut délimiter sa zone imprimable avec un id se terminant par "-print-area" ;
+   tout le reste de l'habillage applicatif (sidebar, topbar, bottom nav, formulaires d'édition
+   situés après la zone) est masqué à l'impression. */
+@media print {
+  aside,
+  header,
+  #mobile-bottom-nav {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  body {
+    overflow: visible !important;
+  }
+  [id$="-print-area"] ~ * {
+    display: none !important;
+  }
+}

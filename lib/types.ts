@@ -150,6 +150,8 @@ export interface Project {
   budget: number | null;
   currency: string | null;
   donor_principal_id: string | null;
+  objectives: string | null;
+  target_groups: string | null;
   is_archived: boolean;
   created_by: string | null;
   created_at: string;
@@ -169,6 +171,7 @@ export interface Intervention {
   name: string;
   description: string | null;
   admin_zone_id: string | null;
+  implementing_partner_id: string | null;
   geom: unknown | null;
   date: string | null;
   status: string;

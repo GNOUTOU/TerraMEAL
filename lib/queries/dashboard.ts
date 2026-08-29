@@ -24,17 +24,19 @@ export async function getDashboardKpis(f: DashboardFilters): Promise<DashboardKp
 
 export async function getFilterOptions() {
   const supabase = await createClient();
-  const [{ data: projects }, { data: sectors }, { data: donors }, { data: zones }] = await Promise.all([
+  const [{ data: projects }, { data: sectors }, { data: donors }, { data: zones }, { data: partners }] = await Promise.all([
     supabase.from("projects").select("id, code, name").order("name"),
     supabase.from("sectors").select("id, name, color").eq("active", true).order("name"),
     supabase.from("donors").select("id, name").eq("active", true).order("name"),
     supabase.from("admin_zones").select("id, name, level").in("level", ["region", "province", "commune"]).order("name"),
+    supabase.from("partners").select("id, name").eq("active", true).order("name"),
   ]);
   return {
     projects: projects ?? [],
     sectors: sectors ?? [],
     donors: donors ?? [],
     zones: zones ?? [],
+    partners: partners ?? [],
   };
 }
 
@@ -150,6 +152,42 @@ export async function getMyProjectsSummary() {
     interventions_count: stats.get(p.id)?.count ?? 0,
     beneficiaries: stats.get(p.id)?.beneficiaries ?? 0,
   }));
+}
+
+// Alertes fraîcheur/synchronisation — Cahier des charges 18.4 / 25.6 : signale les réalisations
+// non rafraîchies (vue stale_interventions) et les dernières synchronisations en échec.
+export async function getDataFreshnessSummary() {
+  const supabase = await createClient();
+  const [{ count: staleCount }, { data: failedSources }] = await Promise.all([
+    supabase.from("stale_interventions").select("*", { count: "exact", head: true }),
+    supabase.from("data_sources").select("id, name, last_sync_status, last_sync_at").eq("active", true).ilike("last_sync_status", "Échec%"),
+  ]);
+  return {
+    stale: staleCount ?? 0,
+    failedSyncs: failedSources ?? [],
+  };
+}
+
+// Analyse de couverture (15.6) — communes sans réalisation ou les moins couvertes, pour aider
+// la Direction/le Responsable Programme à repérer les zones sous-desservies.
+export async function getZoneCoverage(limit = 8) {
+  const supabase = await createClient();
+  const [{ data: communes }, { data: interventions }] = await Promise.all([
+    supabase.from("admin_zones").select("id, name").eq("level", "commune").order("name"),
+    supabase.from("interventions").select("admin_zone_id").in("validation_status", ["validated", "published"]),
+  ]);
+  if (!communes || communes.length === 0) return [];
+
+  const counts = new Map<string, number>();
+  for (const row of interventions ?? []) {
+    if (!row.admin_zone_id) continue;
+    counts.set(row.admin_zone_id, (counts.get(row.admin_zone_id) ?? 0) + 1);
+  }
+
+  return communes
+    .map((z) => ({ id: z.id, name: z.name, count: counts.get(z.id) ?? 0 }))
+    .sort((a, b) => a.count - b.count)
+    .slice(0, limit);
 }
 
 export async function getQualityAlertsSummary() {

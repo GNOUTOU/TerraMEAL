@@ -10,7 +10,9 @@ import { getFilterOptions } from "@/lib/queries/dashboard";
 import { interventionsToFeatureCollection } from "@/lib/geo";
 import ExportMenu from "@/components/ui/ExportMenu";
 import { MapPinned, Plus } from "lucide-react";
-import type { ValidationStatus } from "@/lib/types";
+import type { ValidationStatus, DataSourceType } from "@/lib/types";
+import { DATA_SOURCE_LABELS } from "@/lib/types";
+import { yearOptions } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 // Filet de sécurité réseau : la carte affiche tous les points correspondant aux filtres (c'est
@@ -48,6 +50,18 @@ export default async function InterventionsPage({
   if (sp.status) {
     mapQuery = mapQuery.eq("validation_status", sp.status);
     tableQuery = tableQuery.eq("validation_status", sp.status);
+  }
+  if (sp.partner) {
+    mapQuery = mapQuery.eq("implementing_partner_id", sp.partner);
+    tableQuery = tableQuery.eq("implementing_partner_id", sp.partner);
+  }
+  if (sp.source) {
+    mapQuery = mapQuery.eq("source", sp.source);
+    tableQuery = tableQuery.eq("source", sp.source);
+  }
+  if (sp.year) {
+    mapQuery = mapQuery.gte("date", `${sp.year}-01-01`).lte("date", `${sp.year}-12-31`);
+    tableQuery = tableQuery.gte("date", `${sp.year}-01-01`).lte("date", `${sp.year}-12-31`);
   }
   if (sp.q) {
     mapQuery = mapQuery.ilike("name", `%${sp.q}%`);
@@ -92,6 +106,13 @@ export default async function InterventionsPage({
           { key: "project", label: "Tous les projets", options: options.projects.map((p) => ({ value: p.id, label: p.name })) },
           { key: "sector", label: "Tous les secteurs", options: options.sectors.map((s) => ({ value: s.id, label: s.name })) },
           { key: "zone", label: "Toutes les zones", options: options.zones.map((z) => ({ value: z.id, label: z.name })) },
+          { key: "partner", label: "Tous les partenaires", options: options.partners.map((p) => ({ value: p.id, label: p.name })) },
+          {
+            key: "source",
+            label: "Toutes les sources",
+            options: (Object.keys(DATA_SOURCE_LABELS) as DataSourceType[]).map((k) => ({ value: k, label: DATA_SOURCE_LABELS[k] })),
+          },
+          { key: "year", label: "Toutes les années", options: yearOptions() },
           {
             key: "status",
             label: "Tous les statuts",

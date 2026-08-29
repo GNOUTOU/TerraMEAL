@@ -11,8 +11,9 @@ import DocumentsPanel from "@/components/documents/DocumentsPanel";
 import ProjectForm from "../ProjectForm";
 import MapView from "@/components/map/MapView";
 import type { DocumentRecord, IndicatorResult, Intervention, Project } from "@/lib/types";
-import { FolderKanban, MapPinned, Users, Layers, MapPin, HandCoins, Handshake, FileText, Map, Gauge, AlignLeft, Pencil, ArrowRight, Star } from "lucide-react";
+import { FolderKanban, MapPinned, Users, Layers, MapPin, HandCoins, Handshake, FileText, Map, Gauge, AlignLeft, Pencil, ArrowRight, Star, Target, TrendingUp } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
+import PrintButton from "./PrintButton";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,21 +51,34 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const beneficiariesTotal = ((interventionsGeo as Intervention[]) ?? []).reduce((sum, i) => sum + (i.beneficiaries_total ?? 0), 0);
   const featureCollection = interventionsToFeatureCollection((interventionsGeo as never[]) ?? []);
 
+  // "Progression" (29) : taux d'atteinte moyen des indicateurs du projet, l'indicateur de
+  // progression le plus parlant pour un outil MEAL — à défaut de résultats, non calculable.
+  const ratesWithValue = ((indicatorResults as unknown as IndicatorResult[]) ?? []).filter((r) => r.achievement_rate != null);
+  const avgProgress =
+    ratesWithValue.length > 0 ? Math.round(ratesWithValue.reduce((s, r) => s + (r.achievement_rate ?? 0), 0) / ratesWithValue.length) : null;
+
   return (
     <div>
       <PageHeader
         title={project.name}
         description={project.code}
         icon={FolderKanban}
-        actions={<ProjectStatusBadge status={project.status} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <ProjectStatusBadge status={project.status} />
+            <PrintButton />
+          </div>
+        }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventionsGeo?.length ?? 0} />
-        <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
-        <KpiCard icon={Layers} color="amber" label="Secteurs" value={sectorLinks?.length ?? 0} />
-        <KpiCard icon={MapPin} label="Zones couvertes" value={zoneLinks?.length ?? 0} />
-      </div>
+      <div id="project-print-area">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
+          <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventionsGeo?.length ?? 0} />
+          <KpiCard icon={Users} color="violet" label="Bénéficiaires (agrégés)" value={beneficiariesTotal.toLocaleString("fr-FR")} />
+          <KpiCard icon={Layers} color="amber" label="Secteurs" value={sectorLinks?.length ?? 0} />
+          <KpiCard icon={MapPin} label="Zones couvertes" value={zoneLinks?.length ?? 0} />
+          <KpiCard icon={TrendingUp} color="emerald" label="Progression" value={avgProgress != null ? `${avgProgress}%` : "—"} hint="taux d'atteinte moyen" />
+        </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -77,6 +91,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <Info label="Reporting" value={project.reporting_period ?? "—"} />
               <Info label="Budget" value={project.budget ? `${project.budget.toLocaleString("fr-FR")} ${project.currency}` : "—"} />
             </dl>
+            {(project.objectives || project.target_groups) && (
+              <div className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 dark:border-slate-800">
+                {project.objectives && (
+                  <div>
+                    <dt className="mb-1 flex items-center gap-1 text-xs text-slate-400">
+                      <Target size={12} /> Objectifs
+                    </dt>
+                    <dd className="whitespace-pre-line text-sm text-slate-600 dark:text-slate-300">{project.objectives}</dd>
+                  </div>
+                )}
+                {project.target_groups && (
+                  <div>
+                    <dt className="mb-1 flex items-center gap-1 text-xs text-slate-400">
+                      <Users size={12} /> Groupes cibles
+                    </dt>
+                    <dd className="whitespace-pre-line text-sm text-slate-600 dark:text-slate-300">{project.target_groups}</dd>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
 
           <Card>
@@ -202,6 +236,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               revalidate={`/projects/${id}`}
             />
           </Card>
+        </div>
         </div>
       </div>
 

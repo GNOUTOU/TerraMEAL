@@ -2,7 +2,7 @@ import Link from "next/link";
 import { KpiCard, Card } from "@/components/ui/Card";
 import FilterBar from "@/components/ui/FilterBar";
 import EChart from "@/components/charts/EChart";
-import { FolderKanban, MapPinned, Users, Landmark, ShieldAlert, PartyPopper, ArrowRight } from "lucide-react";
+import { FolderKanban, MapPinned, Users, Landmark, ShieldAlert, PartyPopper, ArrowRight, Clock, RefreshCw } from "lucide-react";
 import {
   getDashboardKpis,
   getFilterOptions,
@@ -10,18 +10,20 @@ import {
   getInterventionsByStatusAndYear,
   getIndicatorPerformance,
   getQualityAlertsSummary,
+  getDataFreshnessSummary,
   type DashboardFilters,
 } from "@/lib/queries/dashboard";
 import { ANOMALY_TYPE_LABELS, VALIDATION_STATUS_LABELS } from "@/lib/types";
 
 export default async function OperationalDashboard({ filters }: { filters: DashboardFilters }) {
-  const [kpis, options, bySector, byStatusYear, indicatorPerf, quality] = await Promise.all([
+  const [kpis, options, bySector, byStatusYear, indicatorPerf, quality, freshness] = await Promise.all([
     getDashboardKpis(filters),
     getFilterOptions(),
     getInterventionsBySector(filters),
     getInterventionsByStatusAndYear(filters),
     getIndicatorPerformance(),
     getQualityAlertsSummary(),
+    getDataFreshnessSummary(),
   ]);
 
   return (
@@ -155,6 +157,46 @@ export default async function OperationalDashboard({ filters }: { filters: Dashb
           </div>
         )}
       </Card>
+
+      {(freshness.stale > 0 || freshness.failedSyncs.length > 0) && (
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {freshness.stale > 0 && (
+            <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  <Clock size={16} /> Données anciennes
+                </h2>
+                <Link href="/quality" className="flex items-center gap-1 text-xs text-amber-700 hover:underline dark:text-amber-300">
+                  Voir <ArrowRight size={12} />
+                </Link>
+              </div>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                {freshness.stale} réalisation(s) validée(s)/publiée(s) n&apos;ont pas été rafraîchies depuis le seuil de fraîcheur configuré.
+              </p>
+            </Card>
+          )}
+
+          {freshness.failedSyncs.length > 0 && (
+            <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold text-red-800 dark:text-red-300">
+                  <RefreshCw size={16} /> Synchronisations en échec
+                </h2>
+                <Link href="/admin/sources" className="flex items-center gap-1 text-xs text-red-700 hover:underline dark:text-red-300">
+                  Voir <ArrowRight size={12} />
+                </Link>
+              </div>
+              <ul className="space-y-1 text-sm text-red-700 dark:text-red-300">
+                {freshness.failedSyncs.map((s) => (
+                  <li key={s.id}>
+                    <span className="font-medium">{s.name}</span> — {s.last_sync_status}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
