@@ -4,6 +4,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { getFilterOptions } from "@/lib/queries/dashboard";
 import { interventionsToFeatureCollection, interventionsToLineAndPolygonFeatureCollection, zonesToFeatureCollection } from "@/lib/geo";
 import MapView from "@/components/map/MapView";
+import MapSearchBox from "./MapSearchBox";
 import { Map } from "lucide-react";
 
 export default async function MapPage({
@@ -18,6 +19,7 @@ export default async function MapPage({
   if (sp.project) query = query.eq("project_id", sp.project);
   if (sp.sector) query = query.eq("sector_id", sp.sector);
   if (sp.zone) query = query.eq("admin_zone_id", sp.zone);
+  if (sp.intervention) query = query.eq("id", sp.intervention);
 
   const [{ data: interventions }, { data: zones }, options, { data: sectors }] = await Promise.all([
     query,
@@ -35,6 +37,10 @@ export default async function MapPage({
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="Carte (WebGIS)" description="Visualisation cartographique de toutes les interventions validées et publiées." icon={Map} />
+
+      <div className="mb-3">
+        <MapSearchBox />
+      </div>
 
       <FilterBar
         filters={[
