@@ -33,6 +33,21 @@ export function interventionsToFeatureCollection(
   };
 }
 
+export function interventionsToLineAndPolygonFeatureCollection(
+  rows: InterventionGeoRow[]
+): GeoJSON.FeatureCollection<GeoJSON.Geometry, { name?: string }> {
+  return {
+    type: "FeatureCollection",
+    features: rows
+      .filter((r) => r.geom_json && (r.geom_json.type === "LineString" || r.geom_json.type === "Polygon"))
+      .map((r) => ({
+        type: "Feature",
+        geometry: r.geom_json as GeoJSON.Geometry,
+        properties: { name: r.name },
+      })),
+  };
+}
+
 interface AdminZoneGeoRow {
   id: string;
   name: string;

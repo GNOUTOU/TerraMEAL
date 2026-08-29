@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
 import { getFilterOptions } from "@/lib/queries/dashboard";
-import { interventionsToFeatureCollection, zonesToFeatureCollection } from "@/lib/geo";
+import { interventionsToFeatureCollection, interventionsToLineAndPolygonFeatureCollection, zonesToFeatureCollection } from "@/lib/geo";
 import MapView from "@/components/map/MapView";
 import { Map } from "lucide-react";
 
@@ -27,7 +27,9 @@ export default async function MapPage({
   ]);
 
   const points = interventionsToFeatureCollection((interventions ?? []) as never[]);
-  const polygons = zonesToFeatureCollection((zones ?? []) as never[]);
+  const zonePolygons = zonesToFeatureCollection((zones ?? []) as never[]);
+  const interventionShapes = interventionsToLineAndPolygonFeatureCollection((interventions ?? []) as never[]);
+  const polygons = { ...zonePolygons, features: [...zonePolygons.features, ...interventionShapes.features] };
   const legend = (sectors ?? []).map((s) => ({ id: s.id, label: s.name, color: s.color }));
 
   return (

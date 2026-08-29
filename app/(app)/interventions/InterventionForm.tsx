@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createIntervention, updateIntervention } from "@/lib/actions/interventions";
+import GeometryDrawMap from "./GeometryDrawMap";
 import type { Activity, Infrastructure, Intervention } from "@/lib/types";
 
 interface RefItem {
@@ -82,6 +83,14 @@ export default function InterventionForm({
         <Text label="Longitude" name="lng" type="number" defaultValue={lng} placeholder="ex: -1.55" />
       </div>
       <Text label="Bénéficiaires (total agrégé)" name="beneficiaries_total" type="number" defaultValue={intervention?.beneficiaries_total ?? undefined} />
+
+      <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+        <legend className="px-1 text-xs font-semibold uppercase text-slate-400">Géométrie sur la carte (point / ligne / polygone)</legend>
+        <p className="mb-2 text-xs text-slate-400">
+          Optionnel : pour une ligne ou un polygone, dessinez directement sur la carte. Pour un simple point, les champs latitude/longitude ci-dessus suffisent.
+        </p>
+        <GeometryDrawMap initialGeometry={intervention?.geom as GeoJSON.Geometry | null | undefined} />
+      </fieldset>
 
       {category === "infrastructure" && (
         <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">

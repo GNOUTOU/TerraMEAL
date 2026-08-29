@@ -21,6 +21,7 @@ interface InterventionInput {
   beneficiaries_total: number | null;
   lat: number | null;
   lng: number | null;
+  geom_geojson: string | null;
   // infrastructure
   infra_type: string | null;
   capacity: number | null;
@@ -51,6 +52,7 @@ function parseInput(formData: FormData): InterventionInput {
     beneficiaries_total: num(formData.get("beneficiaries_total")),
     lat: num(formData.get("lat")),
     lng: num(formData.get("lng")),
+    geom_geojson: str(formData.get("geom_geojson")),
     infra_type: str(formData.get("infra_type")),
     capacity: num(formData.get("capacity")),
     functional_status: str(formData.get("functional_status")),
@@ -61,13 +63,42 @@ function parseInput(formData: FormData): InterventionInput {
   };
 }
 
+// Convertit une géométrie ligne/polygone dessinée sur la carte (GeometryDrawMap) en EWKT, dans
+// le même format texte que le Point issu des champs latitude/longitude (SRID=4326;<WKT>), pour
+// que l'insertion Supabase suive exactement le même chemin de cast implicite côté PostGIS.
+function geojsonToEwkt(raw: string | null): string | null {
+  if (!raw) return null;
+  let geometry: { type: string; coordinates: unknown };
+  try {
+    geometry = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const coordsToPairs = (coords: [number, number][]) => coords.map(([x, y]) => `${x} ${y}`).join(", ");
+  if (geometry.type === "LineString") {
+    const coords = geometry.coordinates as [number, number][];
+    if (coords.length < 2) return null;
+    return `SRID=4326;LINESTRING(${coordsToPairs(coords)})`;
+  }
+  if (geometry.type === "Polygon") {
+    const rings = geometry.coordinates as [number, number][][];
+    if (!rings[0] || rings[0].length < 4) return null;
+    return `SRID=4326;POLYGON((${coordsToPairs(rings[0])}))`;
+  }
+  return null;
+}
+
+function resolveGeom(input: Pick<InterventionInput, "lat" | "lng" | "geom_geojson">): string | null {
+  return geojsonToEwkt(input.geom_geojson) ?? (input.lat != null && input.lng != null ? `SRID=4326;POINT(${input.lng} ${input.lat})` : null);
+}
+
 export async function createIntervention(formData: FormData) {
   const { userId } = await requireRole(["admin", "meal_sig", "program_manager"]);
   const input = parseInput(formData);
   if (!input.project_id || !input.name || !input.type) return { error: "Projet, nom et type sont obligatoires." };
 
   const supabase = await createClient();
-  const geom = input.lat != null && input.lng != null ? `SRID=4326;POINT(${input.lng} ${input.lat})` : null;
+  const geom = resolveGeom(input);
 
   const { data, error } = await supabase
     .from("interventions")
@@ -125,7 +156,7 @@ export async function updateIntervention(id: string, formData: FormData) {
   if (!input.project_id || !input.name || !input.type) return { error: "Projet, nom et type sont obligatoires." };
 
   const supabase = await createClient();
-  const geom = input.lat != null && input.lng != null ? `SRID=4326;POINT(${input.lng} ${input.lat})` : null;
+  const geom = resolveGeom(input);
 
   const { error } = await supabase
     .from("interventions")

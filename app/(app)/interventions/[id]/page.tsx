@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { ValidationStatusBadge, SeverityBadge } from "@/components/ui/Badge";
 import MapView from "@/components/map/MapView";
 import DocumentsPanel from "@/components/documents/DocumentsPanel";
-import { interventionsToFeatureCollection } from "@/lib/geo";
+import { interventionsToFeatureCollection, interventionsToLineAndPolygonFeatureCollection } from "@/lib/geo";
 import InterventionForm from "../InterventionForm";
 import ValidationActions from "./ValidationActions";
 import BeneficiaryForm from "./BeneficiaryForm";
@@ -40,6 +40,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
   const canWrite = canWriteOperationalData(profile.role);
   const canValidate = profile.role === "admin" || profile.role === "meal_sig";
   const features = interventionsToFeatureCollection([intervention] as never[]);
+  const lineAndPolygonFeatures = interventionsToLineAndPolygonFeatureCollection([intervention] as never[]);
   const beneficiariesTotal = (beneficiaries ?? []).reduce((s, b) => s + b.count, 0);
 
   return (
@@ -78,7 +79,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
             <Card>
               <SectionTitle icon={Map} className="mb-3">Localisation</SectionTitle>
               <div style={{ height: 260 }}>
-                <MapView points={features} zoom={11} />
+                <MapView points={features} polygons={lineAndPolygonFeatures} zoom={11} />
               </div>
             </Card>
           )}

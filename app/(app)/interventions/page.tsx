@@ -7,7 +7,7 @@ import { ValidationStatusBadge } from "@/components/ui/Badge";
 import MapView from "@/components/map/MapView";
 import Pagination from "@/components/ui/Pagination";
 import { getFilterOptions } from "@/lib/queries/dashboard";
-import { interventionsToFeatureCollection } from "@/lib/geo";
+import { interventionsToFeatureCollection, interventionsToLineAndPolygonFeatureCollection } from "@/lib/geo";
 import ExportMenu from "@/components/ui/ExportMenu";
 import { MapPinned, Plus } from "lucide-react";
 import type { ValidationStatus, DataSourceType } from "@/lib/types";
@@ -72,6 +72,7 @@ export default async function InterventionsPage({
 
   const [{ data: mapRows }, { data: rows, count }, options] = await Promise.all([mapQueryFinal, tableQueryFinal, getFilterOptions()]);
   const features = interventionsToFeatureCollection((mapRows ?? []) as never[]);
+  const lineAndPolygonFeatures = interventionsToLineAndPolygonFeatureCollection((mapRows ?? []) as never[]);
   const legend = options.sectors.map((s) => ({ id: s.id, label: s.name, color: (s as { color?: string }).color ?? "#2563eb" }));
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const cleanParams = Object.fromEntries(Object.entries(sp).filter(([, v]) => v !== undefined)) as Record<string, string>;
@@ -128,7 +129,7 @@ export default async function InterventionsPage({
       />
 
       <div className="mb-4" style={{ height: 360 }}>
-        <MapView points={features} legend={legend} />
+        <MapView points={features} polygons={lineAndPolygonFeatures} legend={legend} />
       </div>
 
       {!rows || rows.length === 0 ? (
