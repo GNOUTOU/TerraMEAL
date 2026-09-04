@@ -3,11 +3,16 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/update-password", "/public", "/auth/callback"];
 
+// Fichiers statiques (contournement worker maplibre-gl, cf. components/map/MapView.tsx) requis
+// par la carte du portail public (/public, visiteurs anonymes) — jamais soumis à l'auth.
+const PUBLIC_STATIC_FILES = new Set(["/maplibre-gl-worker.mjs", "/maplibre-gl-shared.mjs"]);
+
 function isPublicPath(pathname: string) {
   return (
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/public")
+    pathname.startsWith("/api/public") ||
+    PUBLIC_STATIC_FILES.has(pathname)
   );
 }
 

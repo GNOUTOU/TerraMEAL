@@ -6,6 +6,9 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Spline, Hexagon, Trash2, Undo2 } from "lucide-react";
 
+// Contournement Turbopack (dev) pour le Web Worker de maplibre-gl — voir components/map/MapView.tsx.
+maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
+
 type GeomKind = "Point" | "LineString" | "Polygon";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };

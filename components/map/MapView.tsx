@@ -6,6 +6,15 @@ import type { Map as MapLibreMap, MapMouseEvent, StyleSpecification } from "mapl
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Satellite, Map as MapIcon, Sun, Download, Check, Ruler, BoxSelect, X, Trash2 } from "lucide-react";
 
+// Turbopack (dev) ne résout pas correctement l'URL du Web Worker que maplibre-gl calcule à
+// l'exécution (import.meta.url) — la requête du script de module renvoie du HTML au lieu du JS
+// ("Failed to load module script: ... text/html"), et ce worker traite TOUTES les sources
+// GeoJSON (points, clusters, zones) : sans lui, rien ne s'affiche jamais, silencieusement.
+// Contournement standard maplibre/mapbox : pointer vers une copie statique du worker servie
+// depuis /public (maplibre-gl-worker.mjs + son dépendant maplibre-gl-shared.mjs), en dehors du
+// pipeline de bundling. Voir package.json → script "postinstall".
+maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
+
 export interface MapFeatureProperties {
   id: string;
   title: string;
