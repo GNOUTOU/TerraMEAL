@@ -18,7 +18,7 @@ export default async function IndicatorDetailPage({ params }: { params: Promise<
 
   const [{ data: results }, { data: projects }, { data: zones }] = await Promise.all([
     supabase.from("indicator_results_with_rate").select("*").eq("indicator_id", id).order("period"),
-    supabase.from("projects").select("id, name").order("name"),
+    supabase.from("projects").select("id, name").is("deleted_at", null).order("name"),
     supabase.from("admin_zones").select("id, name").order("name"),
   ]);
 

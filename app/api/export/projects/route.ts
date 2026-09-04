@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const format = request.nextUrl.searchParams.get("format") ?? "csv";
 
-  const { data, error } = await supabase.from("projects").select("*");
+  const { data, error } = await supabase.from("projects").select("*").is("deleted_at", null);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   await supabase.from("activity_log").insert({

@@ -71,6 +71,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         }
       />
 
+      {project.deleted_at && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          Ce projet est dans la corbeille (supprimé le {new Date(project.deleted_at).toLocaleString("fr-FR")}). Il n&apos;apparaît plus dans les listes. Restaurez-le depuis{" "}
+          <Link href="/projects/corbeille" className="font-medium underline">
+            la corbeille
+          </Link>
+          .
+        </div>
+      )}
+
       <div id="project-print-area">
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
           <KpiCard icon={MapPinned} color="blue" label="Réalisations" value={interventionsGeo?.length ?? 0} />
@@ -241,7 +251,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {canWrite && (
-        <Card className="mt-6">
+        <Card className="mt-6 scroll-mt-6" id="modifier">
           <SectionTitle icon={Pencil} className="mb-4">Modifier le projet</SectionTitle>
           <ProjectForm
             project={project as Project}
@@ -250,6 +260,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             partners={ref.partners}
             donors={ref.donors}
             managers={ref.managers}
+            canCreateManager={profile.role === "admin"}
             selected={{
               sector_ids: (sectorLinks ?? []).map((s) => s.sector_id),
               zone_ids: (zoneLinks ?? []).map((z) => z.admin_zone_id),

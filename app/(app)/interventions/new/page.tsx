@@ -14,7 +14,7 @@ export default async function NewInterventionPage({
   const supabase = await createClient();
 
   const [{ data: projects }, { data: sectors }, { data: zones }, { data: partners }] = await Promise.all([
-    supabase.from("projects").select("id, name").order("name"),
+    supabase.from("projects").select("id, name").is("deleted_at", null).order("name"),
     supabase.from("sectors").select("id, name").eq("active", true).order("name"),
     supabase.from("admin_zones").select("id, name").order("name"),
     supabase.from("partners").select("id, name").eq("active", true).order("name"),

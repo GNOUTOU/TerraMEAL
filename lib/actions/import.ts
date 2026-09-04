@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { fetchKoboSubmissions, extractKoboCoordinates, type KoboConfig } from "@/lib/connectors/kobo";
 import { fetchMwaterRecords, extractMwaterCoordinates, type MwaterConfig } from "@/lib/connectors/mwater";
+import { normalizeImportRow } from "@/lib/import/normalize";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -214,7 +215,8 @@ export async function submitFileImport(payload: {
   fileName: string;
   fileType: "csv" | "excel" | "geojson" | "kml";
   rows: Record<string, unknown>[];
-  mapping: Record<string, string>; // colonne fichier -> champ TerraMEAL
+  mapping: Record<string, string>; // colonne fichier -> champ TerraMEAL (ou "__extra")
+  extraLabels?: Record<string, string>; // colonne fichier -> libellé lisible pour « Autres »
   defaultProjectId: string;
   defaultCategory: string;
 }) {
@@ -224,18 +226,17 @@ export async function submitFileImport(payload: {
   if (payload.rows.length === 0) return { error: "Aucune ligne à importer." };
   if (!payload.defaultProjectId) return { error: "Veuillez sélectionner le projet cible." };
 
+  const extraLabels = payload.extraLabels ?? {};
+  const idColumn = Object.entries(payload.mapping).find(([, t]) => t === "external_id")?.[0];
+
   const records = payload.rows.map((row, idx) => {
+    const { normalized: n } = normalizeImportRow(row, payload.mapping, extraLabels);
     const normalized: NormalizedRow = {
-      external_id: String(row[payload.mapping["external_id"] ?? ""] ?? `row-${idx}`),
+      ...n,
+      external_id: (n.external_id as string) ?? (idColumn ? String(row[idColumn] ?? `row-${idx}`) : `row-${idx}`),
       project_id: payload.defaultProjectId,
-      category: payload.defaultCategory,
+      category: (n.category as string) ?? payload.defaultCategory,
     };
-    for (const [column, terraField] of Object.entries(payload.mapping)) {
-      if (!terraField) continue;
-      normalized[terraField] = row[column];
-    }
-    if (normalized.lat) normalized.lat = Number(normalized.lat);
-    if (normalized.lng) normalized.lng = Number(normalized.lng);
     return { external_id: normalized.external_id ?? null, payload: row, normalized };
   });
 

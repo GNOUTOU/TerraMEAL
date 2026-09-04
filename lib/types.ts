@@ -153,6 +153,9 @@ export interface Project {
   objectives: string | null;
   target_groups: string | null;
   is_archived: boolean;
+  is_hidden: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -176,6 +179,18 @@ export interface Intervention {
   date: string | null;
   status: string;
   beneficiaries_total: number | null;
+  beneficiaries_female: number | null;
+  beneficiaries_male: number | null;
+  realisation_nature: string | null;
+  author_type: "prestataire" | "organisation" | null;
+  author_name: string | null;
+  country: string | null;
+  region: string | null;
+  province: string | null;
+  commune: string | null;
+  village: string | null;
+  photos: string[];
+  import_extras: Record<string, unknown>;
   validation_status: ValidationStatus;
   sensitivity_level: 1 | 2 | 3 | 4;
   rejection_reason: string | null;

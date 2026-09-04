@@ -4,7 +4,7 @@ import FileImportWizard from "./FileImportWizard";
 
 export default async function FilesImportPage() {
   const supabase = await createClient();
-  const { data: projects } = await supabase.from("projects").select("id, name").order("name");
+  const { data: projects } = await supabase.from("projects").select("id, name").is("deleted_at", null).order("name");
 
   return (
     <Card>

@@ -28,7 +28,7 @@ export default async function PublicPortalPage() {
   }
 
   const [{ data: projects }, { data: interventions }, { data: orgName }] = await Promise.all([
-    supabase.from("projects").select("id, name, status, start_date, end_date").in("status", ["active", "closed"]),
+    supabase.from("projects").select("id, name, status, start_date, end_date").in("status", ["active", "closed"]).is("deleted_at", null).eq("is_hidden", false),
     supabase.from("interventions_geo").select("*").eq("validation_status", "published").eq("sensitivity_level", 1),
     supabase.from("app_settings").select("value").eq("key", "org_name").maybeSingle(),
   ]);

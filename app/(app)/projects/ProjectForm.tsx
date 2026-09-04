@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProject, updateProject } from "@/lib/actions/projects";
+import { quickCreateReference } from "@/lib/actions/reference";
+import { useToast } from "@/components/ui/Toast";
+import EntityCombobox, { type ComboOption } from "./EntityCombobox";
+import ManagerQuickCreate from "./ManagerQuickCreate";
 import type { Project } from "@/lib/types";
 import { PROJECT_STATUS_LABELS } from "@/lib/types";
 
@@ -13,6 +17,14 @@ interface RefItem {
   color?: string;
 }
 
+const ZONE_LEVELS = [
+  { value: "commune", label: "Commune" },
+  { value: "province", label: "Province" },
+  { value: "region", label: "Région" },
+  { value: "country", label: "Pays" },
+  { value: "locality", label: "Localité" },
+];
+
 export default function ProjectForm({
   project,
   sectors,
@@ -21,6 +33,7 @@ export default function ProjectForm({
   donors,
   managers,
   selected,
+  canCreateManager = false,
 }: {
   project?: Project;
   sectors: RefItem[];
@@ -29,20 +42,58 @@ export default function ProjectForm({
   donors: RefItem[];
   managers: { id: string; full_name: string }[];
   selected?: { sector_ids: string[]; zone_ids: string[]; partner_ids: string[]; donor_ids: string[] };
+  canCreateManager?: boolean;
 }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
+
+  const [sectorOpts, setSectorOpts] = useState<ComboOption[]>(sectors.map((s) => ({ id: s.id, name: s.name })));
+  const [zoneOpts, setZoneOpts] = useState<ComboOption[]>(
+    zones.map((z) => ({ id: z.id, name: z.level ? `${z.name} (${z.level})` : z.name }))
+  );
+  const [partnerOpts, setPartnerOpts] = useState<ComboOption[]>(partners.map((p) => ({ id: p.id, name: p.name })));
+  const [donorOpts, setDonorOpts] = useState<ComboOption[]>(donors.map((d) => ({ id: d.id, name: d.name })));
+  const [managerOpts, setManagerOpts] = useState<ComboOption[]>(managers.map((m) => ({ id: m.id, name: m.full_name })));
+
+  const [sectorIds, setSectorIds] = useState<string[]>(selected?.sector_ids ?? []);
+  const [zoneIds, setZoneIds] = useState<string[]>(selected?.zone_ids ?? []);
+  const [partnerIds, setPartnerIds] = useState<string[]>(selected?.partner_ids ?? []);
+  const [donorIds, setDonorIds] = useState<string[]>(selected?.donor_ids ?? []);
+  const [donorPrincipalId, setDonorPrincipalId] = useState<string[]>(
+    project?.donor_principal_id ? [project.donor_principal_id] : []
+  );
+  const [managerId, setManagerId] = useState<string[]>(project?.manager_id ? [project.manager_id] : []);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    setError(null);
     startTransition(async () => {
       const result = project ? await updateProject(project.id, formData) : await createProject(formData);
-      if (result?.error) setError(result.error);
-      else if (project) router.refresh();
+      if (result?.error) {
+        toast.error(result.error);
+      } else if (project) {
+        toast.success("Projet enregistré.");
+        router.refresh();
+      }
     });
+  }
+
+  function createRef(
+    kind: "sector" | "zone" | "partner" | "donor",
+    setOpts: React.Dispatch<React.SetStateAction<ComboOption[]>>,
+    formatName?: (name: string, level?: string) => string
+  ) {
+    return async (name: string, extra: { level?: string }) => {
+      const res = await quickCreateReference(kind, name, extra);
+      if ("error" in res) return res;
+      const opt: ComboOption = {
+        id: res.id,
+        name: formatName ? formatName(res.name, extra.level) : res.name,
+      };
+      setOpts((prev) => [...prev, opt].sort((a, b) => a.name.localeCompare(b.name, "fr")));
+      return opt;
+    };
   }
 
   return (
@@ -66,14 +117,28 @@ export default function ProjectForm({
           <TextField label="Début" name="start_date" type="date" defaultValue={project?.start_date ?? undefined} />
           <TextField label="Fin" name="end_date" type="date" defaultValue={project?.end_date ?? undefined} />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextField label="Période de reporting" name="reporting_period" defaultValue={project?.reporting_period ?? ""} />
-          <SelectField
-            label="Responsable"
-            name="manager_id"
-            defaultValue={project?.manager_id ?? ""}
-            options={managers.map((m) => ({ value: m.id, label: m.full_name }))}
-          />
+          <div>
+            <EntityCombobox
+              label="Responsable"
+              name="manager_id"
+              options={managerOpts}
+              value={managerId}
+              onChange={setManagerId}
+              placeholder="Choisir un responsable…"
+            />
+            {canCreateManager && (
+              <ManagerQuickCreate
+                onCreated={(m) => {
+                  setManagerOpts((prev) =>
+                    [...prev, { id: m.id, name: m.full_name }].sort((a, b) => a.name.localeCompare(b.name, "fr"))
+                  );
+                  setManagerId([m.id]);
+                }}
+              />
+            )}
+          </div>
         </div>
       </fieldset>
 
@@ -82,14 +147,33 @@ export default function ProjectForm({
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <TextField label="Budget" name="budget" type="number" defaultValue={project?.budget ?? undefined} />
           <TextField label="Devise" name="currency" defaultValue={project?.currency ?? "USD"} />
-          <SelectField
+          <EntityCombobox
             label="Bailleur principal"
             name="donor_principal_id"
-            defaultValue={project?.donor_principal_id ?? ""}
-            options={donors.map((d) => ({ value: d.id, label: d.name }))}
+            options={donorOpts}
+            value={donorPrincipalId}
+            onChange={(ids) => {
+              setDonorPrincipalId(ids);
+              // Le bailleur principal fait forcément partie des co-financements.
+              if (ids[0] && !donorIds.includes(ids[0])) setDonorIds((d) => [...d, ids[0]]);
+            }}
+            placeholder="Choisir ou créer…"
+            onCreate={createRef("donor", setDonorOpts)}
           />
         </div>
-        <CheckboxGroup label="Bailleurs / co-financements" name="donor_ids" options={donors} defaultValues={selected?.donor_ids} />
+        <div className="mt-3">
+          <EntityCombobox
+            label="Bailleurs / co-financements"
+            name="donor_ids"
+            multiple
+            options={donorOpts}
+            value={donorIds}
+            onChange={setDonorIds}
+            placeholder="Ajouter un bailleur…"
+            hint="Tapez un nom absent de la liste pour le créer instantanément."
+            onCreate={createRef("donor", setDonorOpts)}
+          />
+        </div>
       </fieldset>
 
       <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
@@ -100,19 +184,40 @@ export default function ProjectForm({
         </div>
       </fieldset>
 
-      <fieldset className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+      <fieldset className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-800">
         <legend className="px-1 text-xs font-semibold uppercase text-slate-400">Programmatique &amp; géographie</legend>
-        <CheckboxGroup label="Secteurs" name="sector_ids" options={sectors} defaultValues={selected?.sector_ids} />
-        <CheckboxGroup
+        <EntityCombobox
+          label="Secteurs"
+          name="sector_ids"
+          multiple
+          options={sectorOpts}
+          value={sectorIds}
+          onChange={setSectorIds}
+          placeholder="Ajouter un secteur…"
+          onCreate={createRef("sector", setSectorOpts)}
+        />
+        <EntityCombobox
           label="Zones de couverture"
           name="zone_ids"
-          options={zones.map((z) => ({ id: z.id, name: `${z.name}${z.level ? ` (${z.level})` : ""}` }))}
-          defaultValues={selected?.zone_ids}
+          multiple
+          options={zoneOpts}
+          value={zoneIds}
+          onChange={setZoneIds}
+          placeholder="Ajouter une zone…"
+          createLevels={ZONE_LEVELS}
+          onCreate={createRef("zone", setZoneOpts, (n, lvl) => (lvl ? `${n} (${lvl})` : n))}
         />
-        <CheckboxGroup label="Partenaires de mise en œuvre" name="partner_ids" options={partners} defaultValues={selected?.partner_ids} />
+        <EntityCombobox
+          label="Partenaires de mise en œuvre"
+          name="partner_ids"
+          multiple
+          options={partnerOpts}
+          value={partnerIds}
+          onChange={setPartnerIds}
+          placeholder="Ajouter un partenaire…"
+          onCreate={createRef("partner", setPartnerOpts)}
+        />
       </fieldset>
-
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
 
       <button
         type="submit"
@@ -192,33 +297,6 @@ function SelectField({
           </option>
         ))}
       </select>
-    </div>
-  );
-}
-
-function CheckboxGroup({
-  label,
-  name,
-  options,
-  defaultValues = [],
-}: {
-  label: string;
-  name: string;
-  options: { id: string; name: string }[];
-  defaultValues?: string[];
-}) {
-  return (
-    <div className="mt-3">
-      <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">{label}</p>
-      <div className="flex max-h-32 flex-wrap gap-x-4 gap-y-1.5 overflow-y-auto rounded-lg border border-slate-200 p-2 dark:border-slate-700">
-        {options.length === 0 && <span className="text-xs text-slate-400">Aucun élément disponible.</span>}
-        {options.map((o) => (
-          <label key={o.id} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-            <input type="checkbox" name={name} value={o.id} defaultChecked={defaultValues.includes(o.id)} className="h-3.5 w-3.5 rounded border-slate-300" />
-            {o.name}
-          </label>
-        ))}
-      </div>
     </div>
   );
 }

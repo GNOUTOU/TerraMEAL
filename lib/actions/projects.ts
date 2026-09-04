@@ -163,3 +163,58 @@ export async function archiveProject(id: string) {
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
 }
+
+// « Masquer » / « Afficher » : retire (ou remet) le projet de la liste principale sans le
+// supprimer. Réversible depuis l'onglet « Masqués » de la page Projets.
+export async function setProjectHidden(id: string, hidden: boolean) {
+  await requireRole(["admin", "meal_sig", "program_manager"]);
+  const supabase = await createClient();
+  const { error } = await supabase.from("projects").update({ is_hidden: hidden }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${id}`);
+  return { success: true };
+}
+
+// « Supprimer » : envoie le projet dans la corbeille (suppression réversible). Rien n'est
+// effacé — le projet peut être restauré ou supprimé définitivement par un administrateur.
+export async function trashProject(id: string) {
+  const { userId } = await requireRole(["admin", "meal_sig"]);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/projects");
+  revalidatePath("/projects/corbeille");
+  revalidatePath(`/projects/${id}`);
+  return { success: true };
+}
+
+export async function restoreProject(id: string) {
+  await requireRole(["admin", "meal_sig"]);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .update({ deleted_at: null, deleted_by: null })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/projects");
+  revalidatePath("/projects/corbeille");
+  revalidatePath(`/projects/${id}`);
+  return { success: true };
+}
+
+// Suppression définitive depuis la corbeille — réservée aux administrateurs (RLS
+// `projects_delete`). Les tables liées (project_donors, project_zones, interventions...)
+// sont supprimées en cascade par les contraintes de clés étrangères.
+export async function deleteProjectPermanently(id: string) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const { error } = await supabase.from("projects").delete().eq("id", id).not("deleted_at", "is", null);
+  if (error) return { error: error.message };
+  revalidatePath("/projects");
+  revalidatePath("/projects/corbeille");
+  return { success: true };
+}

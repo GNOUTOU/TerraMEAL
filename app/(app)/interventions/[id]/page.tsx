@@ -31,7 +31,7 @@ export default async function InterventionDetailPage({ params }: { params: Promi
       supabase.from("beneficiaries_breakdown").select("*").eq("intervention_id", id),
       supabase.from("anomalies").select("*").eq("entity_table", "interventions").eq("entity_id", id).order("detected_at", { ascending: false }),
       supabase.from("documents").select("*").eq("entity_table", "interventions").eq("entity_id", id).order("uploaded_at", { ascending: false }),
-      supabase.from("projects").select("id, name").order("name"),
+      supabase.from("projects").select("id, name").is("deleted_at", null).order("name"),
       supabase.from("sectors").select("id, name").eq("active", true).order("name"),
       supabase.from("admin_zones").select("id, name").order("name"),
       supabase.from("partners").select("id, name").eq("active", true).order("name"),
@@ -57,16 +57,74 @@ export default async function InterventionDetailPage({ params }: { params: Promi
           <Card>
             <dl className="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
               <Info label="Projet" value={<Link href={`/projects/${intervention.project_id}`} className="text-emerald-600 hover:underline">{intervention.project_name}</Link>} />
+              {intervention.realisation_nature && <Info label="Nature de la réalisation" value={intervention.realisation_nature} />}
               <Info label="Secteur" value={intervention.sector_name ?? "—"} />
               <Info label="Zone" value={intervention.admin_zone_name ?? "—"} />
               <Info label="Partenaire de mise en œuvre" value={intervention.implementing_partner_name ?? "—"} />
+              {(intervention.author_name || intervention.author_type) && (
+                <Info
+                  label="Auteur de la réalisation"
+                  value={[intervention.author_name, intervention.author_type && `(${intervention.author_type})`].filter(Boolean).join(" ")}
+                />
+              )}
               <Info label="Date" value={intervention.date ?? "—"} />
               <Info label="Statut opérationnel" value={intervention.status} />
-              <Info label="Bénéficiaires" value={(intervention.beneficiaries_total ?? beneficiariesTotal).toLocaleString("fr-FR")} />
               <Info label="Source" value={DATA_SOURCE_LABELS[intervention.source as keyof typeof DATA_SOURCE_LABELS]} />
               <Info label="Identifiant source" value={intervention.source_id ?? "—"} />
               <Info label="Dernière mise à jour" value={new Date(intervention.last_updated_at).toLocaleDateString("fr-FR")} />
             </dl>
+
+            {(intervention.country || intervention.region || intervention.province || intervention.commune || intervention.village) && (
+              <div className="mt-4">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Localisation (source)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {[intervention.village, intervention.commune, intervention.province, intervention.region, intervention.country]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Bénéficiaires</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Total : <strong>{(intervention.beneficiaries_total ?? beneficiariesTotal).toLocaleString("fr-FR")}</strong>
+                {intervention.beneficiaries_female != null && <> · Femmes : {Number(intervention.beneficiaries_female).toLocaleString("fr-FR")}</>}
+                {intervention.beneficiaries_male != null && <> · Hommes : {Number(intervention.beneficiaries_male).toLocaleString("fr-FR")}</>}
+              </p>
+            </div>
+
+            {Array.isArray(intervention.photos) && intervention.photos.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Photos ({intervention.photos.length})</p>
+                <ul className="space-y-0.5 text-xs">
+                  {(intervention.photos as string[]).map((p, i) => (
+                    <li key={i}>
+                      {/^https?:\/\//.test(p) ? (
+                        <a href={p} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline break-all">{p}</a>
+                      ) : (
+                        <span className="font-mono text-slate-500">{p}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {intervention.import_extras && typeof intervention.import_extras === "object" && Object.keys(intervention.import_extras).length > 0 && (
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/50 p-2 dark:border-amber-900 dark:bg-amber-950/20">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Autres informations conservées à l&apos;import</p>
+                <dl className="grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-2">
+                  {Object.entries(intervention.import_extras as Record<string, unknown>).map(([k, v]) => (
+                    <div key={k} className="flex gap-1.5">
+                      <dt className="shrink-0 font-medium text-slate-500">{k} :</dt>
+                      <dd className="truncate text-slate-600 dark:text-slate-300">{String(v ?? "")}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+
             {intervention.description && <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">{intervention.description}</p>}
             {intervention.rejection_reason && (
               <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">

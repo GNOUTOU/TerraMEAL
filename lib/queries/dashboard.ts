@@ -25,7 +25,7 @@ export async function getDashboardKpis(f: DashboardFilters): Promise<DashboardKp
 export async function getFilterOptions() {
   const supabase = await createClient();
   const [{ data: projects }, { data: sectors }, { data: donors }, { data: zones }, { data: partners }] = await Promise.all([
-    supabase.from("projects").select("id, code, name").order("name"),
+    supabase.from("projects").select("id, code, name").is("deleted_at", null).order("name"),
     supabase.from("sectors").select("id, name, color").eq("active", true).order("name"),
     supabase.from("donors").select("id, name").eq("active", true).order("name"),
     supabase.from("admin_zones").select("id, name, level").in("level", ["region", "province", "commune"]).order("name"),
@@ -100,7 +100,7 @@ export async function getIndicatorPerformance() {
 // automatiquement une répartition limitée à son propre périmètre.
 export async function getPortfolioByStatus() {
   const supabase = await createClient();
-  const { data } = await supabase.from("projects").select("status");
+  const { data } = await supabase.from("projects").select("status").is("deleted_at", null);
   const counts = new Map<string, number>();
   for (const row of data ?? []) counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
   return Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
@@ -109,7 +109,7 @@ export async function getPortfolioByStatus() {
 // Classement des projets par bénéficiaires atteints — vue exécutive.
 export async function getTopProjects(limit = 6) {
   const supabase = await createClient();
-  const { data: projects } = await supabase.from("projects").select("id, name, status").order("name");
+  const { data: projects } = await supabase.from("projects").select("id, name, status").is("deleted_at", null).order("name");
   if (!projects || projects.length === 0) return [];
 
   const { data: interventions } = await supabase
@@ -132,7 +132,7 @@ export async function getTopProjects(limit = 6) {
 // Programme ("Vos projets").
 export async function getMyProjectsSummary() {
   const supabase = await createClient();
-  const { data: projects } = await supabase.from("projects").select("*").order("name");
+  const { data: projects } = await supabase.from("projects").select("*").is("deleted_at", null).order("name");
   if (!projects || projects.length === 0) return [];
 
   const { data: interventions } = await supabase.from("interventions").select("project_id, beneficiaries_total, validation_status");
